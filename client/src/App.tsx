@@ -16,6 +16,10 @@ import ClientDetailPage from "@/pages/client-detail";
 import ServicesPage from "@/pages/services";
 import PackagesPage from "@/pages/packages";
 import CheckInPage from "@/pages/check-in";
+import IntakePage from "@/pages/intake";
+import ReportsPage from "@/pages/reports";
+import InventoryPage from "@/pages/inventory";
+import SettingsPage from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -39,6 +43,10 @@ function AppRouter() {
       <Route path="/services" component={ServicesPage} />
       <Route path="/packages" component={PackagesPage} />
       <Route path="/check-in/:id" component={CheckInPage} />
+      <Route path="/intake" component={IntakePage} />
+      <Route path="/reports" component={ReportsPage} />
+      <Route path="/inventory" component={InventoryPage} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );

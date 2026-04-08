@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarDays, Users, Sparkles, Package, Settings, Sun } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, Sparkles, Package, Settings, Sun, ClipboardCheck, BarChart3, Boxes, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -19,6 +19,12 @@ const mainItems = [
   { title: "Clients", url: "/clients", icon: Users },
   { title: "Services", url: "/services", icon: Sparkles },
   { title: "Packages", url: "/packages", icon: Package },
+];
+
+const manageItems = [
+  { title: "Intake & Waivers", url: "/intake", icon: ClipboardCheck },
+  { title: "Inventory", url: "/inventory", icon: Boxes },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -47,7 +53,28 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     data-active={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
-                    data-testid={`nav-${item.title.toLowerCase()}`}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Manage</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {manageItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    data-active={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                   >
                     <Link href={item.url}>
                       <item.icon className="w-4 h-4" />

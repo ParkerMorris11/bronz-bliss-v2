@@ -6,18 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { ArrowLeft, CheckCircle, Package, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Appointment, Client, Service } from "@shared/schema";
+import { useState, useEffect } from "react";
+import type { Appointment, Client, Service, ClientPackage } from "@shared/schema";
 
 export default function CheckInPage() {
   const [, params] = useRoute("/check-in/:id");
   const [, navigate] = useLocation();
   const id = Number(params?.id);
   const { toast } = useToast();
+  const [usePackage, setUsePackage] = useState(false);
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("");
 
   const { data: appointment, isLoading } = useQuery<Appointment>({
     queryKey: ["/api/appointments", id],
@@ -37,6 +42,24 @@ export default function CheckInPage() {
     enabled: !!appointment?.serviceId,
   });
 
+  const { data: clientPackages } = useQuery<ClientPackage[]>({
+    queryKey: ["/api/client-packages", appointment?.clientId],
+    queryFn: () => apiRequest("GET", `/api/client-packages?clientId=${appointment!.clientId}`).then((r) => r.json()),
+    enabled: !!appointment?.clientId,
+  });
+
+  const activePackages = (clientPackages || []).filter(
+    (p) => p.status === "active" && p.sessionsRemaining > 0
+  );
+
+  // Auto-select first active package if available
+  useEffect(() => {
+    if (activePackages.length > 0 && !selectedPackageId) {
+      setSelectedPackageId(String(activePackages[0].id));
+      setUsePackage(true);
+    }
+  }, [activePackages.length]);
+
   const completeMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       // Update appointment status
@@ -54,8 +77,27 @@ export default function CheckInPage() {
         createdAt: new Date().toISOString().split("T")[0],
       });
 
-      // Create payment
-      if (service) {
+      // Handle payment — either deduct from package or charge normally
+      if (usePackage && selectedPackageId) {
+        const pkg = activePackages.find((p) => p.id === Number(selectedPackageId));
+        if (pkg) {
+          // Deduct session from package
+          await apiRequest("PATCH", `/api/client-packages/${pkg.id}`, {
+            sessionsRemaining: pkg.sessionsRemaining - 1,
+            status: pkg.sessionsRemaining - 1 <= 0 ? "used" : "active",
+          });
+          // Record $0 payment (covered by package)
+          await apiRequest("POST", "/api/payments", {
+            clientId: appointment!.clientId,
+            appointmentId: id,
+            amount: 0,
+            type: "package_session",
+            method: "package",
+            createdAt: new Date().toISOString().split("T")[0],
+          });
+        }
+      } else if (service) {
+        // Normal payment
         await apiRequest("POST", "/api/payments", {
           clientId: appointment!.clientId,
           appointmentId: id,
@@ -71,6 +113,7 @@ export default function CheckInPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client-packages"] });
       toast({ title: "Session completed and recorded" });
       navigate("/calendar");
     },
@@ -121,6 +164,19 @@ export default function CheckInPage() {
               {client.preferredFormula && <div><span className="text-muted-foreground">Preferred formula:</span> {client.preferredFormula}</div>}
               {client.allergies && <div className="col-span-2 text-amber-600 dark:text-amber-400">Allergies: {client.allergies}</div>}
               {client.notes && <div className="col-span-2 text-muted-foreground">{client.notes}</div>}
+            </div>
+            {/* Intake / Waiver status */}
+            <div className="flex gap-2 mt-3">
+              {client.intakeCompleted ? (
+                <Badge variant="secondary" className="text-xs">Intake Complete</Badge>
+              ) : (
+                <Badge variant="destructive" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" /> No Intake</Badge>
+              )}
+              {client.waiverSigned ? (
+                <Badge variant="secondary" className="text-xs">Waiver Signed</Badge>
+              ) : (
+                <Badge variant="destructive" className="text-xs"><AlertTriangle className="w-3 h-3 mr-1" /> No Waiver</Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -183,24 +239,87 @@ export default function CheckInPage() {
             <CardTitle className="text-sm font-semibold">Payment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span>{service?.name}</span>
-              <span className="font-semibold">${service?.price}</span>
-            </div>
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <Select name="paymentMethod" defaultValue="card">
-                <SelectTrigger data-testid="select-payment-method">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="card">Card</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="venmo">Venmo</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Package auto-deduction toggle */}
+            {activePackages.length > 0 && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Use Package Session</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activePackages.length} active package{activePackages.length > 1 ? "s" : ""} available
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={usePackage}
+                  onCheckedChange={setUsePackage}
+                  data-testid="switch-use-package"
+                />
+              </div>
+            )}
+
+            {usePackage && activePackages.length > 0 ? (
+              <div className="space-y-3">
+                {activePackages.length > 1 && (
+                  <div className="space-y-2">
+                    <Label>Select Package</Label>
+                    <Select value={selectedPackageId} onValueChange={setSelectedPackageId}>
+                      <SelectTrigger data-testid="select-package">
+                        <SelectValue placeholder="Choose package" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activePackages.map((pkg) => (
+                          <SelectItem key={pkg.id} value={String(pkg.id)}>
+                            Package #{pkg.id} — {pkg.sessionsRemaining} sessions left (expires {pkg.expiryDate})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {selectedPackageId && (() => {
+                  const pkg = activePackages.find((p) => p.id === Number(selectedPackageId));
+                  return pkg ? (
+                    <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Sessions remaining</span>
+                        <span className="font-semibold">{pkg.sessionsRemaining} → {pkg.sessionsRemaining - 1}</span>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-muted-foreground">Expires</span>
+                        <span>{pkg.expiryDate}</span>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-muted-foreground">Charge</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">$0 (covered)</span>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span>{service?.name}</span>
+                  <span className="font-semibold">${service?.price}</span>
+                </div>
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <Select name="paymentMethod" defaultValue="card">
+                    <SelectTrigger data-testid="select-payment-method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="venmo">Venmo</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -211,7 +330,7 @@ export default function CheckInPage() {
           data-testid="button-complete-session"
         >
           <CheckCircle className="w-4 h-4 mr-2" />
-          {completeMutation.isPending ? "Completing..." : "Complete Session & Checkout"}
+          {completeMutation.isPending ? "Completing..." : usePackage ? "Complete Session (Package)" : "Complete Session & Checkout"}
         </Button>
       </form>
     </div>

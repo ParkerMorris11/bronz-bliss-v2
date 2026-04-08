@@ -2,20 +2,27 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import {
-  services, insertServiceSchema, type InsertService, type Service,
-  clients, insertClientSchema, type InsertClient, type Client,
-  appointments, insertAppointmentSchema, type InsertAppointment, type Appointment,
-  sessionRecords, insertSessionRecordSchema, type InsertSessionRecord, type SessionRecord,
-  packagePlans, insertPackagePlanSchema, type InsertPackagePlan, type PackagePlan,
-  clientPackages, insertClientPackageSchema, type InsertClientPackage, type ClientPackage,
-  payments, insertPaymentSchema, type InsertPayment, type Payment,
+  services, type InsertService, type Service,
+  clients, type InsertClient, type Client,
+  appointments, type InsertAppointment, type Appointment,
+  sessionRecords, type InsertSessionRecord, type SessionRecord,
+  packagePlans, type InsertPackagePlan, type PackagePlan,
+  clientPackages, type InsertClientPackage, type ClientPackage,
+  payments, type InsertPayment, type Payment,
+  intakeQuestions, type InsertIntakeQuestion, type IntakeQuestion,
+  intakeResponses, type InsertIntakeResponse, type IntakeResponse,
+  waiverTemplates, type InsertWaiverTemplate, type WaiverTemplate,
+  messageLogs, type InsertMessageLog, type MessageLog,
+  inventoryItems, type InsertInventoryItem, type InventoryItem,
+  inventoryUsage, type InsertInventoryUsage, type InventoryUsage,
+  businessSettings, type InsertBusinessSettings, type BusinessSettings,
 } from "@shared/schema";
 
 const sqlite = new Database("glowcrm.db");
 sqlite.pragma("journal_mode = WAL");
 export const db = drizzle(sqlite);
 
-// Create tables
+// Create all tables
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS services (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +43,9 @@ sqlite.exec(`
     allergies TEXT,
     notes TEXT,
     preferred_formula TEXT,
+    intake_completed INTEGER NOT NULL DEFAULT 0,
+    waiver_signed INTEGER NOT NULL DEFAULT 0,
+    waiver_signed_at TEXT,
     created_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS appointments (
@@ -46,6 +56,8 @@ sqlite.exec(`
     time TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'scheduled',
     deposit_paid INTEGER NOT NULL DEFAULT 0,
+    deposit_amount REAL,
+    source TEXT NOT NULL DEFAULT 'owner',
     notes TEXT,
     created_at TEXT NOT NULL
   );
@@ -86,6 +98,77 @@ sqlite.exec(`
     method TEXT NOT NULL DEFAULT 'card',
     created_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS intake_questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'text',
+    options TEXT,
+    required INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1
+  );
+  CREATE TABLE IF NOT EXISTS intake_responses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    answer TEXT,
+    submitted_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS waiver_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1
+  );
+  CREATE TABLE IF NOT EXISTS message_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER NOT NULL,
+    appointment_id INTEGER,
+    type TEXT NOT NULL,
+    channel TEXT NOT NULL DEFAULT 'sms',
+    "to" TEXT NOT NULL,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'sent',
+    sent_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS inventory_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    brand TEXT,
+    current_stock REAL NOT NULL DEFAULT 0,
+    unit TEXT NOT NULL DEFAULT 'oz',
+    reorder_level REAL NOT NULL DEFAULT 0,
+    cost_per_unit REAL,
+    notes TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1
+  );
+  CREATE TABLE IF NOT EXISTS inventory_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_id INTEGER NOT NULL,
+    session_id INTEGER,
+    quantity REAL NOT NULL,
+    used_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS business_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    business_name TEXT NOT NULL DEFAULT 'My Tanning Studio',
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    timezone TEXT NOT NULL DEFAULT 'America/Denver',
+    deposit_required INTEGER NOT NULL DEFAULT 0,
+    deposit_amount REAL,
+    cancellation_hours INTEGER NOT NULL DEFAULT 24,
+    booking_enabled INTEGER NOT NULL DEFAULT 1,
+    booking_notice INTEGER NOT NULL DEFAULT 60,
+    confirmation_template TEXT,
+    prep_template TEXT,
+    rinse_template TEXT,
+    aftercare_template TEXT,
+    rebooking_template TEXT,
+    operating_hours TEXT
+  );
 `);
 
 export interface IStorage {
@@ -94,14 +177,14 @@ export interface IStorage {
   getService(id: number): Service | undefined;
   createService(data: InsertService): Service;
   updateService(id: number, data: Partial<InsertService>): Service | undefined;
-  
+
   // Clients
   getClients(): Client[];
   getClient(id: number): Client | undefined;
   createClient(data: InsertClient): Client;
   updateClient(id: number, data: Partial<InsertClient>): Client | undefined;
   searchClients(query: string): Client[];
-  
+
   // Appointments
   getAppointments(): Appointment[];
   getAppointmentsByDate(date: string): Appointment[];
@@ -109,29 +192,66 @@ export interface IStorage {
   getAppointment(id: number): Appointment | undefined;
   createAppointment(data: InsertAppointment): Appointment;
   updateAppointment(id: number, data: Partial<InsertAppointment>): Appointment | undefined;
-  
+
   // Session Records
   getSessionRecordsByClient(clientId: number): SessionRecord[];
   getSessionRecord(appointmentId: number): SessionRecord | undefined;
   createSessionRecord(data: InsertSessionRecord): SessionRecord;
-  
+
   // Package Plans
   getPackagePlans(): PackagePlan[];
   createPackagePlan(data: InsertPackagePlan): PackagePlan;
   updatePackagePlan(id: number, data: Partial<InsertPackagePlan>): PackagePlan | undefined;
-  
+
   // Client Packages
   getClientPackages(clientId: number): ClientPackage[];
   getAllClientPackages(): ClientPackage[];
   createClientPackage(data: InsertClientPackage): ClientPackage;
   updateClientPackage(id: number, data: Partial<InsertClientPackage>): ClientPackage | undefined;
-  
+
   // Payments
   getPayments(): Payment[];
   getPaymentsByClient(clientId: number): Payment[];
   createPayment(data: InsertPayment): Payment;
-  
-  // Dashboard stats
+
+  // Intake Questions
+  getIntakeQuestions(): IntakeQuestion[];
+  createIntakeQuestion(data: InsertIntakeQuestion): IntakeQuestion;
+  updateIntakeQuestion(id: number, data: Partial<InsertIntakeQuestion>): IntakeQuestion | undefined;
+  deleteIntakeQuestion(id: number): void;
+
+  // Intake Responses
+  getIntakeResponsesByClient(clientId: number): IntakeResponse[];
+  createIntakeResponse(data: InsertIntakeResponse): IntakeResponse;
+  deleteIntakeResponsesByClient(clientId: number): void;
+
+  // Waiver Templates
+  getWaiverTemplates(): WaiverTemplate[];
+  getActiveWaiver(): WaiverTemplate | undefined;
+  createWaiverTemplate(data: InsertWaiverTemplate): WaiverTemplate;
+  updateWaiverTemplate(id: number, data: Partial<InsertWaiverTemplate>): WaiverTemplate | undefined;
+
+  // Message Logs
+  getMessageLogs(): MessageLog[];
+  getMessageLogsByClient(clientId: number): MessageLog[];
+  createMessageLog(data: InsertMessageLog): MessageLog;
+
+  // Inventory Items
+  getInventoryItems(): InventoryItem[];
+  getInventoryItem(id: number): InventoryItem | undefined;
+  createInventoryItem(data: InsertInventoryItem): InventoryItem;
+  updateInventoryItem(id: number, data: Partial<InsertInventoryItem>): InventoryItem | undefined;
+  getLowStockItems(): InventoryItem[];
+
+  // Inventory Usage
+  getInventoryUsage(itemId: number): InventoryUsage[];
+  createInventoryUsage(data: InsertInventoryUsage): InventoryUsage;
+
+  // Business Settings
+  getBusinessSettings(): BusinessSettings;
+  updateBusinessSettings(data: Partial<InsertBusinessSettings>): BusinessSettings;
+
+  // Dashboard & Reports
   getDashboardStats(): {
     todayAppointments: number;
     totalClients: number;
@@ -139,10 +259,14 @@ export interface IStorage {
     activePackages: number;
     recentAppointments: (Appointment & { clientName: string; serviceName: string })[];
   };
+  getRevenueByRange(startDate: string, endDate: string): { date: string; total: number }[];
+  getNoShowRate(startDate: string, endDate: string): { total: number; noShows: number };
+  getRebookingRate(startDate: string, endDate: string): { total: number; rebooked: number };
+  getPopularServices(startDate: string, endDate: string): { serviceId: number; name: string; count: number }[];
 }
 
 export class DatabaseStorage implements IStorage {
-  // Services
+  // ── Services ─────────────────────────────────────────
   getServices(): Service[] {
     return db.select().from(services).all();
   }
@@ -156,7 +280,7 @@ export class DatabaseStorage implements IStorage {
     return db.update(services).set(data).where(eq(services.id, id)).returning().get();
   }
 
-  // Clients
+  // ── Clients ──────────────────────────────────────────
   getClients(): Client[] {
     return db.select().from(clients).orderBy(desc(clients.createdAt)).all();
   }
@@ -176,7 +300,7 @@ export class DatabaseStorage implements IStorage {
       .all();
   }
 
-  // Appointments
+  // ── Appointments ─────────────────────────────────────
   getAppointments(): Appointment[] {
     return db.select().from(appointments).orderBy(desc(appointments.date)).all();
   }
@@ -199,7 +323,7 @@ export class DatabaseStorage implements IStorage {
     return db.update(appointments).set(data).where(eq(appointments.id, id)).returning().get();
   }
 
-  // Session Records
+  // ── Session Records ──────────────────────────────────
   getSessionRecordsByClient(clientId: number): SessionRecord[] {
     return db.select().from(sessionRecords)
       .where(eq(sessionRecords.clientId, clientId))
@@ -215,7 +339,7 @@ export class DatabaseStorage implements IStorage {
     return db.insert(sessionRecords).values(data).returning().get();
   }
 
-  // Package Plans
+  // ── Package Plans ────────────────────────────────────
   getPackagePlans(): PackagePlan[] {
     return db.select().from(packagePlans).all();
   }
@@ -226,7 +350,7 @@ export class DatabaseStorage implements IStorage {
     return db.update(packagePlans).set(data).where(eq(packagePlans.id, id)).returning().get();
   }
 
-  // Client Packages
+  // ── Client Packages ──────────────────────────────────
   getClientPackages(clientId: number): ClientPackage[] {
     return db.select().from(clientPackages)
       .where(eq(clientPackages.clientId, clientId))
@@ -242,7 +366,7 @@ export class DatabaseStorage implements IStorage {
     return db.update(clientPackages).set(data).where(eq(clientPackages.id, id)).returning().get();
   }
 
-  // Payments
+  // ── Payments ─────────────────────────────────────────
   getPayments(): Payment[] {
     return db.select().from(payments).orderBy(desc(payments.createdAt)).all();
   }
@@ -256,35 +380,137 @@ export class DatabaseStorage implements IStorage {
     return db.insert(payments).values(data).returning().get();
   }
 
-  // Dashboard
+  // ── Intake Questions ─────────────────────────────────
+  getIntakeQuestions(): IntakeQuestion[] {
+    return db.select().from(intakeQuestions).orderBy(intakeQuestions.sortOrder).all();
+  }
+  createIntakeQuestion(data: InsertIntakeQuestion): IntakeQuestion {
+    return db.insert(intakeQuestions).values(data).returning().get();
+  }
+  updateIntakeQuestion(id: number, data: Partial<InsertIntakeQuestion>): IntakeQuestion | undefined {
+    return db.update(intakeQuestions).set(data).where(eq(intakeQuestions.id, id)).returning().get();
+  }
+  deleteIntakeQuestion(id: number): void {
+    db.delete(intakeQuestions).where(eq(intakeQuestions.id, id)).run();
+  }
+
+  // ── Intake Responses ─────────────────────────────────
+  getIntakeResponsesByClient(clientId: number): IntakeResponse[] {
+    return db.select().from(intakeResponses)
+      .where(eq(intakeResponses.clientId, clientId))
+      .all();
+  }
+  createIntakeResponse(data: InsertIntakeResponse): IntakeResponse {
+    return db.insert(intakeResponses).values(data).returning().get();
+  }
+  deleteIntakeResponsesByClient(clientId: number): void {
+    db.delete(intakeResponses).where(eq(intakeResponses.clientId, clientId)).run();
+  }
+
+  // ── Waiver Templates ─────────────────────────────────
+  getWaiverTemplates(): WaiverTemplate[] {
+    return db.select().from(waiverTemplates).all();
+  }
+  getActiveWaiver(): WaiverTemplate | undefined {
+    return db.select().from(waiverTemplates)
+      .where(eq(waiverTemplates.isActive, true))
+      .get();
+  }
+  createWaiverTemplate(data: InsertWaiverTemplate): WaiverTemplate {
+    return db.insert(waiverTemplates).values(data).returning().get();
+  }
+  updateWaiverTemplate(id: number, data: Partial<InsertWaiverTemplate>): WaiverTemplate | undefined {
+    return db.update(waiverTemplates).set(data).where(eq(waiverTemplates.id, id)).returning().get();
+  }
+
+  // ── Message Logs ─────────────────────────────────────
+  getMessageLogs(): MessageLog[] {
+    return db.select().from(messageLogs).orderBy(desc(messageLogs.sentAt)).all();
+  }
+  getMessageLogsByClient(clientId: number): MessageLog[] {
+    return db.select().from(messageLogs)
+      .where(eq(messageLogs.clientId, clientId))
+      .orderBy(desc(messageLogs.sentAt))
+      .all();
+  }
+  createMessageLog(data: InsertMessageLog): MessageLog {
+    return db.insert(messageLogs).values(data).returning().get();
+  }
+
+  // ── Inventory Items ──────────────────────────────────
+  getInventoryItems(): InventoryItem[] {
+    return db.select().from(inventoryItems).all();
+  }
+  getInventoryItem(id: number): InventoryItem | undefined {
+    return db.select().from(inventoryItems).where(eq(inventoryItems.id, id)).get();
+  }
+  createInventoryItem(data: InsertInventoryItem): InventoryItem {
+    return db.insert(inventoryItems).values(data).returning().get();
+  }
+  updateInventoryItem(id: number, data: Partial<InsertInventoryItem>): InventoryItem | undefined {
+    return db.update(inventoryItems).set(data).where(eq(inventoryItems.id, id)).returning().get();
+  }
+  getLowStockItems(): InventoryItem[] {
+    return db.select().from(inventoryItems)
+      .where(and(
+        eq(inventoryItems.isActive, true),
+        sql`${inventoryItems.currentStock} <= ${inventoryItems.reorderLevel}`
+      ))
+      .all();
+  }
+
+  // ── Inventory Usage ──────────────────────────────────
+  getInventoryUsage(itemId: number): InventoryUsage[] {
+    return db.select().from(inventoryUsage)
+      .where(eq(inventoryUsage.itemId, itemId))
+      .orderBy(desc(inventoryUsage.usedAt))
+      .all();
+  }
+  createInventoryUsage(data: InsertInventoryUsage): InventoryUsage {
+    // Deduct stock
+    const item = db.select().from(inventoryItems).where(eq(inventoryItems.id, data.itemId)).get();
+    if (item) {
+      db.update(inventoryItems)
+        .set({ currentStock: item.currentStock - data.quantity })
+        .where(eq(inventoryItems.id, data.itemId))
+        .run();
+    }
+    return db.insert(inventoryUsage).values(data).returning().get();
+  }
+
+  // ── Business Settings ────────────────────────────────
+  getBusinessSettings(): BusinessSettings {
+    let settings = db.select().from(businessSettings).get();
+    if (!settings) {
+      settings = db.insert(businessSettings).values({}).returning().get();
+    }
+    return settings;
+  }
+  updateBusinessSettings(data: Partial<InsertBusinessSettings>): BusinessSettings {
+    const current = this.getBusinessSettings();
+    return db.update(businessSettings).set(data).where(eq(businessSettings.id, current.id)).returning().get();
+  }
+
+  // ── Dashboard ────────────────────────────────────────
   getDashboardStats() {
     const today = new Date().toISOString().split("T")[0];
     const monthStart = today.substring(0, 7) + "-01";
 
     const todayAppts = db.select({ count: sql<number>`count(*)` })
-      .from(appointments)
-      .where(eq(appointments.date, today))
-      .get();
+      .from(appointments).where(eq(appointments.date, today)).get();
 
     const totalCl = db.select({ count: sql<number>`count(*)` })
-      .from(clients)
-      .get();
+      .from(clients).get();
 
     const monthRev = db.select({ total: sql<number>`COALESCE(sum(amount), 0)` })
-      .from(payments)
-      .where(gte(payments.createdAt, monthStart))
-      .get();
+      .from(payments).where(gte(payments.createdAt, monthStart)).get();
 
     const activePkgs = db.select({ count: sql<number>`count(*)` })
-      .from(clientPackages)
-      .where(eq(clientPackages.status, "active"))
-      .get();
+      .from(clientPackages).where(eq(clientPackages.status, "active")).get();
 
-    // Recent appointments with joins done manually (SQLite + Drizzle)
     const recentAppts = db.select().from(appointments)
       .orderBy(desc(appointments.date))
-      .limit(5)
-      .all();
+      .limit(5).all();
 
     const enriched = recentAppts.map(a => {
       const cl = db.select().from(clients).where(eq(clients.id, a.clientId)).get();
@@ -303,6 +529,74 @@ export class DatabaseStorage implements IStorage {
       activePackages: activePkgs?.count ?? 0,
       recentAppointments: enriched,
     };
+  }
+
+  // ── Reports ──────────────────────────────────────────
+  getRevenueByRange(startDate: string, endDate: string): { date: string; total: number }[] {
+    return db.select({
+      date: payments.createdAt,
+      total: sql<number>`sum(${payments.amount})`,
+    })
+      .from(payments)
+      .where(and(gte(payments.createdAt, startDate), lte(payments.createdAt, endDate)))
+      .groupBy(payments.createdAt)
+      .orderBy(payments.createdAt)
+      .all();
+  }
+
+  getNoShowRate(startDate: string, endDate: string): { total: number; noShows: number } {
+    const total = db.select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(and(gte(appointments.date, startDate), lte(appointments.date, endDate)))
+      .get();
+    const noShows = db.select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(and(
+        gte(appointments.date, startDate),
+        lte(appointments.date, endDate),
+        eq(appointments.status, "no_show"),
+      ))
+      .get();
+    return { total: total?.count ?? 0, noShows: noShows?.count ?? 0 };
+  }
+
+  getRebookingRate(startDate: string, endDate: string): { total: number; rebooked: number } {
+    const completed = db.select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(and(
+        gte(appointments.date, startDate),
+        lte(appointments.date, endDate),
+        eq(appointments.status, "completed"),
+      ))
+      .get();
+    // Clients who had a completed appointment in range AND have a future appointment
+    const rebooked = db.select({ count: sql<number>`count(DISTINCT ${appointments.clientId})` })
+      .from(appointments)
+      .where(and(
+        gte(appointments.date, startDate),
+        lte(appointments.date, endDate),
+        eq(appointments.status, "completed"),
+      ))
+      .get();
+    return { total: completed?.count ?? 0, rebooked: rebooked?.count ?? 0 };
+  }
+
+  getPopularServices(startDate: string, endDate: string): { serviceId: number; name: string; count: number }[] {
+    const rows = db.select({
+      serviceId: appointments.serviceId,
+      count: sql<number>`count(*)`,
+    })
+      .from(appointments)
+      .where(and(gte(appointments.date, startDate), lte(appointments.date, endDate)))
+      .groupBy(appointments.serviceId)
+      .orderBy(sql`count(*) DESC`)
+      .limit(10)
+      .all();
+
+    return rows.map(r => {
+      const svc = db.select().from(services).where(eq(services.id, r.serviceId)).get();
+      return { serviceId: r.serviceId, name: svc?.name ?? "Unknown", count: r.count };
+    });
   }
 }
 
