@@ -45,7 +45,7 @@ export function AppSidebar() {
             <Sun className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="text-base font-bold tracking-tight" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
-            GlowCRM
+            Bronz Bliss
           </span>
         </div>
       </SidebarHeader>

@@ -196,7 +196,7 @@ export type InventoryUsage = typeof inventoryUsage.$inferSelect;
 // ── Business Settings ─────────────────────────────────────
 export const businessSettings = sqliteTable("business_settings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  businessName: text("business_name").notNull().default("My Tanning Studio"),
+  businessName: text("business_name").notNull().default("Bronz Bliss"),
   phone: text("phone"),
   email: text("email"),
   address: text("address"),

@@ -152,7 +152,7 @@ sqlite.exec(`
   );
   CREATE TABLE IF NOT EXISTS business_settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    business_name TEXT NOT NULL DEFAULT 'My Tanning Studio',
+    business_name TEXT NOT NULL DEFAULT 'Bronz Bliss',
     phone TEXT,
     email TEXT,
     address TEXT,

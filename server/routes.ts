@@ -523,9 +523,9 @@ export async function registerRoutes(server: Server, app: Express) {
 
     // Business Settings
     storage.updateBusinessSettings({
-      businessName: "Sunsette Tanning Studio",
+      businessName: "Bronz Bliss",
       phone: "435-555-0200",
-      email: "hello@sunsettetanning.com",
+      email: "hello@bronzbliss.com",
       address: "123 Main Street, Cedar City, UT 84720",
       timezone: "America/Denver",
       depositRequired: true,
