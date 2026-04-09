@@ -60,6 +60,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log("Starting Bronz Bliss server...");
+  console.log(`Node ${process.version}, PORT=${process.env.PORT || '5000'}`);
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
