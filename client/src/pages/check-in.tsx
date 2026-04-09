@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
-import type { Appointment, Client, Service, ClientPackage } from "@shared/schema";
+import type { Appointment, Client, Service, ClientPackage, BusinessSettings } from "@shared/schema";
 
 export default function CheckInPage() {
   const [, params] = useRoute("/check-in/:id");
@@ -41,6 +41,29 @@ export default function CheckInPage() {
     queryFn: () => apiRequest("GET", `/api/services/${appointment!.serviceId}`).then((r) => r.json()),
     enabled: !!appointment?.serviceId,
   });
+
+  const { data: settings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/settings"],
+    queryFn: () => apiRequest("GET", "/api/settings").then((r) => r.json()),
+  });
+
+  const acceptedMethods: { value: string; label: string }[] = (() => {
+    const ALL = [
+      { value: "card", label: "Card" },
+      { value: "cash", label: "Cash" },
+      { value: "venmo", label: "Venmo" },
+      { value: "zelle", label: "Zelle" },
+      { value: "applepay", label: "Apple Pay" },
+      { value: "other", label: "Other" },
+    ];
+    try {
+      const methods = settings?.acceptedPaymentMethods ? JSON.parse(settings.acceptedPaymentMethods) : null;
+      if (Array.isArray(methods) && methods.length > 0) {
+        return ALL.filter((m) => methods.includes(m.value));
+      }
+    } catch {}
+    return ALL.filter((m) => ["card", "cash", "venmo"].includes(m.value));
+  })();
 
   const { data: clientPackages } = useQuery<ClientPackage[]>({
     queryKey: ["/api/client-packages", appointment?.clientId],
@@ -306,15 +329,14 @@ export default function CheckInPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Payment Method</Label>
-                  <Select name="paymentMethod" defaultValue="card">
+                  <Select name="paymentMethod" defaultValue={acceptedMethods[0]?.value ?? "card"}>
                     <SelectTrigger data-testid="select-payment-method">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="card">Card</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="venmo">Venmo</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      {acceptedMethods.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

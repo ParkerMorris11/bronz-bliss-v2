@@ -442,6 +442,37 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Section 2b: Payment Methods */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-primary" />
+            <CardTitle style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }} className="text-xl">
+              Payment Methods
+            </CardTitle>
+          </div>
+          <CardDescription>Choose which payment methods you accept.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {ALL_PAYMENT_METHODS.map((method) => (
+            <div key={method.value} className="flex items-center gap-3">
+              <Checkbox
+                id={`payment-${method.value}`}
+                checked={acceptedPaymentMethods.includes(method.value)}
+                onCheckedChange={(checked) => {
+                  setAcceptedPaymentMethods((prev) =>
+                    checked ? [...prev, method.value] : prev.filter((m) => m !== method.value)
+                  );
+                }}
+              />
+              <Label htmlFor={`payment-${method.value}`} className="cursor-pointer">
+                {method.label}
+              </Label>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       {/* Section 3: Operating Hours */}
       <Card>
         <CardHeader>
