@@ -1,4 +1,4 @@
-import { LayoutDashboard, CalendarDays, Users, Sparkles, Package, Settings, Sun, ClipboardCheck, BarChart3, Boxes, Gift, ListChecks } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Users, Sparkles, Package, Settings, ClipboardCheck, BarChart3, Boxes, Gift, ListChecks } from "lucide-react";
 import { Link } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import {
@@ -42,14 +42,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-            <Sun className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="text-base font-bold tracking-tight" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
-            Bronz Bliss
-          </span>
-        </div>
+        <span className="text-base font-bold tracking-tight" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
+          Bronz Bliss
+        </span>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
