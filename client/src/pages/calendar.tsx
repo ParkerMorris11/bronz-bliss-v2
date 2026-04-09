@@ -447,35 +447,45 @@ export default function CalendarPage() {
 
                   <Separator />
 
-                  {/* SMS Automation */}
+                  {/* Quick Messages — copy to clipboard */}
                   <div className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3" /> Send SMS
+                      <MessageSquare className="w-3 h-3" /> Quick Messages
                     </p>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    {client?.phone && (
+                      <p className="text-xs font-mono text-primary">{client.phone}</p>
+                    )}
+                    <div className="grid grid-cols-1 gap-1">
                       {[
-                        { type: "booking_confirm", label: "Confirmation" },
-                        { type: "prep_reminder", label: "Prep Reminder" },
-                        { type: "rinse_reminder", label: "Rinse Reminder" },
-                        { type: "aftercare", label: "Aftercare" },
-                        { type: "rebooking", label: "Rebooking" },
+                        { type: "booking_confirm", label: "Confirmation", msg: `Hi ${client?.firstName || ""}! Your ${service?.name || "appointment"} is confirmed for ${new Date(selectedAppt.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} at ${formatTime(selectedAppt.time)}. See you soon! \u2728 - BRONZ Bliss` },
+                        { type: "prep_reminder", label: "Prep Reminder", msg: `Hey ${client?.firstName || ""}! Your tan is tomorrow at ${formatTime(selectedAppt.time)}. Exfoliate tonight & skip lotions/deodorant day-of for the best results! \ud83e\udd0e - BRONZ Bliss` },
+                        { type: "rinse_reminder", label: "Rinse Reminder", msg: `Hey ${client?.firstName || ""}! Time to rinse your tan \ud83d\udebf Lukewarm water only \u2014 no soap. Pat dry gently. You're gonna love it! \u2728 - BRONZ Bliss` },
+                        { type: "aftercare", label: "Aftercare", msg: `Thanks for coming in ${client?.firstName || ""}! For the best results: avoid water 8 hrs, moisturize daily, and skip exfoliants for 5 days. Enjoy your glow! \ud83e\udd0e - BRONZ Bliss` },
+                        { type: "rebooking", label: "Rebooking", msg: `Hey ${client?.firstName || ""}! Ready to glow again? Book anytime: ${window.location.origin}${window.location.pathname}#/book \u2728 - BRONZ Bliss` },
                       ].map(sms => (
                         <Button
                           key={sms.type}
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-[10px] justify-start"
+                          className="h-auto py-1.5 px-2 text-[10px] justify-start text-left whitespace-normal"
                           onClick={() => {
-                            apiRequest("POST", `/api/automation/trigger/${selectedAppt.id}`, { type: sms.type })
-                              .then(() => {
-                                toast({ title: `${sms.label} sent` });
-                                queryClient.invalidateQueries({ queryKey: ["/api/message-logs"] });
-                              })
-                              .catch(() => toast({ title: "Failed to send", variant: "destructive" }));
+                            navigator.clipboard.writeText(sms.msg).catch(() => {});
+                            toast({ title: `Copied! Paste in iMessage to ${client?.firstName || "client"}` });
+                            apiRequest("POST", "/api/message-logs", {
+                              clientId: selectedAppt.clientId,
+                              appointmentId: selectedAppt.id,
+                              type: sms.type,
+                              channel: "sms",
+                              to: client?.phone || "",
+                              body: sms.msg,
+                              status: "copied",
+                              sentAt: new Date().toISOString(),
+                            }).catch(() => {});
                           }}
                           data-testid={`button-sms-${sms.type}`}
                         >
-                          <Send className="w-3 h-3 mr-1" /> {sms.label}
+                          <Send className="w-3 h-3 mr-1.5 shrink-0" />
+                          <span className="truncate">{sms.label}</span>
                         </Button>
                       ))}
                     </div>
