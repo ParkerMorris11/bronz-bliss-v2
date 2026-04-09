@@ -188,6 +188,7 @@ export interface IStorage {
   // Appointments
   getAppointments(): Appointment[];
   getAppointmentsByDate(date: string): Appointment[];
+  getAppointmentsByRange(start: string, end: string): Appointment[];
   getAppointmentsByClient(clientId: number): Appointment[];
   getAppointment(id: number): Appointment | undefined;
   createAppointment(data: InsertAppointment): Appointment;
@@ -306,6 +307,12 @@ export class DatabaseStorage implements IStorage {
   }
   getAppointmentsByDate(date: string): Appointment[] {
     return db.select().from(appointments).where(eq(appointments.date, date)).all();
+  }
+  getAppointmentsByRange(start: string, end: string): Appointment[] {
+    return db.select().from(appointments)
+      .where(and(gte(appointments.date, start), lte(appointments.date, end)))
+      .orderBy(appointments.date, appointments.time)
+      .all();
   }
   getAppointmentsByClient(clientId: number): Appointment[] {
     return db.select().from(appointments)

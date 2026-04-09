@@ -55,8 +55,12 @@ export async function registerRoutes(server: Server, app: Express) {
   // ── Appointments ──────────────────────────────────────
   app.get("/api/appointments", (req, res) => {
     const date = req.query.date as string | undefined;
+    const start = req.query.start as string | undefined;
+    const end = req.query.end as string | undefined;
     const clientId = req.query.clientId as string | undefined;
-    if (date) {
+    if (start && end) {
+      res.json(storage.getAppointmentsByRange(start, end));
+    } else if (date) {
       res.json(storage.getAppointmentsByDate(date));
     } else if (clientId) {
       res.json(storage.getAppointmentsByClient(Number(clientId)));
