@@ -130,7 +130,7 @@ export default function BookingPage() {
           <h1 className="text-lg font-bold" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
             Online booking is paused
           </h1>
-          <p className="text-sm text-stone-800 mt-2">
+          <p className="text-sm text-stone-950 mt-2">
             {settings.businessName} isn't accepting online bookings right now. Please call or message us directly.
           </p>
           {settings.phone && (
@@ -156,7 +156,7 @@ export default function BookingPage() {
               {settings?.businessName ?? "Book an Appointment"}
             </p>
             {settings?.address && (
-              <p className="text-[10px] text-stone-800 leading-tight mt-0.5">{settings.address}</p>
+              <p className="text-[10px] text-stone-950 leading-tight mt-0.5">{settings.address}</p>
             )}
           </div>
         </div>
@@ -172,11 +172,11 @@ export default function BookingPage() {
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 transition-colors ${
                     i < stepIndex ? "bg-primary text-white" :
                     i === stepIndex ? "bg-primary text-white" :
-                    "bg-stone-200 text-stone-800"
+                    "bg-stone-200 text-stone-950"
                   }`}>
                     {i < stepIndex ? <CheckCircle className="w-3.5 h-3.5" /> : i + 1}
                   </div>
-                  <span className={`text-xs ${i === stepIndex ? "font-medium" : "text-stone-800"}`}>
+                  <span className={`text-xs ${i === stepIndex ? "font-medium" : "text-stone-950"}`}>
                     {stepLabels[i]}
                   </span>
                   {i < steps.length - 1 && <div className="flex-1 h-px bg-stone-200" />}
@@ -193,7 +193,7 @@ export default function BookingPage() {
               <h2 className="text-lg font-bold" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
                 Pick a service
               </h2>
-              <p className="text-sm text-stone-800">Choose the service you'd like to book</p>
+              <p className="text-sm text-stone-950">Choose the service you'd like to book</p>
             </div>
             <div className="space-y-2">
               {services.map(svc => (
@@ -209,12 +209,12 @@ export default function BookingPage() {
                     <div>
                       <p className="font-semibold text-sm">{svc.name}</p>
                       {svc.description && (
-                        <p className="text-xs text-stone-800 mt-0.5">{svc.description}</p>
+                        <p className="text-xs text-stone-950 mt-0.5">{svc.description}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold text-primary">${svc.price}</p>
-                      <div className="flex items-center gap-1 text-xs text-stone-800 mt-0.5">
+                      <div className="flex items-center gap-1 text-xs text-stone-950 mt-0.5">
                         <Clock className="w-3 h-3" />
                         {svc.duration} min
                       </div>
@@ -237,7 +237,7 @@ export default function BookingPage() {
                 <h2 className="text-lg font-bold leading-none" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
                   Pick a date & time
                 </h2>
-                <p className="text-xs text-stone-800 mt-0.5">{selectedService.name} · {selectedService.duration} min · ${selectedService.price}</p>
+                <p className="text-xs text-stone-950 mt-0.5">{selectedService.name} · {selectedService.duration} min · ${selectedService.price}</p>
               </div>
             </div>
 
@@ -260,7 +260,7 @@ export default function BookingPage() {
               </div>
               <div className="grid grid-cols-7 gap-1 text-center">
                 {["M","T","W","T","F","S","S"].map((d, i) => (
-                  <div key={i} className="text-[10px] font-medium text-stone-800 py-1">{d}</div>
+                  <div key={i} className="text-[10px] font-medium text-stone-950 py-1">{d}</div>
                 ))}
                 {grid.flat().map((d, i) => {
                   const iso = toIso(d);
@@ -274,7 +274,7 @@ export default function BookingPage() {
                       disabled={isPast || !isThisMonth}
                       className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
                         isSel ? "bg-primary text-white" :
-                        isPast || !isThisMonth ? "text-stone-500 cursor-default" :
+                        isPast || !isThisMonth ? "text-stone-700 cursor-default" :
                         "hover:bg-primary/10 hover:text-primary"
                       }`}
                       data-testid={`cal-day-${iso}`}
@@ -288,7 +288,7 @@ export default function BookingPage() {
 
             {/* Time slots */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-800 mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-950 mb-2">
                 Available times — {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </p>
               {!availability ? (
@@ -299,13 +299,13 @@ export default function BookingPage() {
                 </div>
               ) : availability.closed ? (
                 <div className="rounded-xl border border-dashed p-6 text-center">
-                  <CalendarDays className="w-6 h-6 text-stone-500 mx-auto mb-2" />
-                  <p className="text-sm text-stone-800">Closed on this day</p>
+                  <CalendarDays className="w-6 h-6 text-stone-700 mx-auto mb-2" />
+                  <p className="text-sm text-stone-950">Closed on this day</p>
                 </div>
               ) : availability.slots.length === 0 ? (
                 <div className="rounded-xl border border-dashed p-6 text-center">
-                  <p className="text-sm text-stone-800">No times available</p>
-                  <p className="text-xs text-stone-700 mt-1">Try a different date</p>
+                  <p className="text-sm text-stone-950">No times available</p>
+                  <p className="text-xs text-stone-900 mt-1">Try a different date</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
@@ -354,7 +354,7 @@ export default function BookingPage() {
             <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">Booking Summary</p>
               <p className="text-sm font-semibold">{selectedService?.name}</p>
-              <div className="flex items-center gap-3 text-xs text-stone-800">
+              <div className="flex items-center gap-3 text-xs text-stone-950">
                 <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{displayDate}</span>
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{displayTime}</span>
                 <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${selectedService?.price}</span>
@@ -420,7 +420,7 @@ export default function BookingPage() {
             </div>
 
             {settings?.cancellationHours && (
-              <p className="text-xs text-stone-800">
+              <p className="text-xs text-stone-950">
                 Free cancellation up to {settings.cancellationHours} hours before your appointment.
               </p>
             )}
@@ -453,17 +453,17 @@ export default function BookingPage() {
               <h2 className="text-xl font-bold" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
                 You're booked!
               </h2>
-              <p className="text-sm text-stone-800 mt-1">
+              <p className="text-sm text-stone-950 mt-1">
                 We'll see you soon. Check your phone for a confirmation.
               </p>
             </div>
             <div className="rounded-xl bg-white border p-4 text-left space-y-2 max-w-xs mx-auto">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-800">Your Appointment</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-950">Your Appointment</p>
               <p className="font-semibold text-sm">{confirmation.serviceName}</p>
-              <p className="text-sm text-stone-800">
+              <p className="text-sm text-stone-950">
                 {new Date(confirmation.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </p>
-              <p className="text-sm text-stone-800">{formatTime(confirmation.time)}</p>
+              <p className="text-sm text-stone-950">{formatTime(confirmation.time)}</p>
               {settings?.depositRequired && settings.depositAmount && (
                 <Badge variant="outline" className="text-[10px]">
                   ${settings.depositAmount} deposit due at appointment
