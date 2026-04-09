@@ -68,6 +68,9 @@ function AppShell() {
   if (isOnboarding) return <OnboardingPage />;
   if (isLanding) return <LandingPage />;
 
+  // Wait for auth check before rendering anything
+  if (!authChecked) return null;
+
   // Login gate for admin
   if (!authed) {
     return <LoginPage onLogin={() => setAuthed(true)} />;

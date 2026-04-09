@@ -3,8 +3,16 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import session from "express-session";
+import MemoryStore from "memorystore";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+
+// ── Startup Guards ───────────────────────────────────────
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET must be set in production");
+}
+
+const SessionStore = MemoryStore(session);
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,9 +31,10 @@ app.use(helmet({
 
 // ── Session Auth ────────────────────────────────────────
 app.use(session({
-  secret: process.env.SESSION_SECRET || "bronzbliss-secret-key-change-in-prod",
+  secret: process.env.SESSION_SECRET || "bronzbliss-dev-secret",
   resave: false,
   saveUninitialized: false,
+  store: new SessionStore({ checkPeriod: 86400000 }), // prune expired entries every 24h
   cookie: {
     secure: process.env.NODE_ENV === "production" && !!process.env.RAILWAY_ENVIRONMENT,
     httpOnly: true,
@@ -77,7 +86,6 @@ const publicPaths = [
   "/api/intake-questions",
   "/api/intake-responses",
   "/api/waiver-templates/active",
-  "/api/clients/", // for onboarding sign-waiver
 ];
 
 app.use("/api/", (req: Request, res: Response, next: NextFunction) => {

@@ -24,6 +24,7 @@ import {
 
 const sqlite = new Database("bronzbliss.db");
 sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("foreign_keys = ON");
 export const db = drizzle(sqlite);
 
 // Create all tables
@@ -176,7 +177,7 @@ sqlite.exec(`
   );
   CREATE TABLE IF NOT EXISTS gift_cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
     initial_amount REAL NOT NULL,
     balance REAL NOT NULL,
     purchaser_name TEXT,
@@ -188,7 +189,7 @@ sqlite.exec(`
   );
   CREATE TABLE IF NOT EXISTS promo_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
     discount_type TEXT NOT NULL DEFAULT 'percent',
     discount_value REAL NOT NULL,
     max_uses INTEGER,

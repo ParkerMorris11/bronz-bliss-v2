@@ -293,7 +293,7 @@ function WaiverStep({
 
   const signMutation = useMutation({
     mutationFn: (data: { signatureName: string }) =>
-      apiRequest("POST", `/api/clients/${clientId}/sign-waiver`, data).then((r) => r.json()),
+      apiRequest("POST", `/api/public/sign-waiver/${clientId}`, data).then((r) => r.json()),
     onSuccess: () => onComplete(),
   });
 

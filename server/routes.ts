@@ -2,15 +2,41 @@ import type { Express } from "express";
 import type { Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+import {
+  insertServiceSchema,
+  insertClientSchema,
+  insertAppointmentSchema,
+  insertSessionRecordSchema,
+  insertPackagePlanSchema,
+  insertClientPackageSchema,
+  insertPaymentSchema,
+  insertInventoryItemSchema,
+  insertGiftCardSchema,
+  insertWaitlistSchema,
+  insertPromoCodeSchema,
+} from "@shared/schema";
 
-// Hash the admin password on startup
-const ADMIN_HASH = bcrypt.hashSync(process.env.ADMIN_PASSWORD || "bronzbliss", 10);
+// Hash the admin password on startup (async to avoid blocking)
+let ADMIN_HASH = "";
+bcrypt.hash(process.env.ADMIN_PASSWORD || "bronzbliss", 10).then(h => { ADMIN_HASH = h; });
+
+function validate(schema: { safeParse: (data: unknown) => { success: boolean; data?: any; error?: any } }) {
+  return (req: any, res: any, next: any) => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: "Invalid request data", details: result.error.flatten() });
+    }
+    req.validated = result.data;
+    next();
+  };
+}
 
 export async function registerRoutes(server: Server, app: Express) {
   // ── Auth ──────────────────────────────────────────────
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const { password } = req.body;
-    if (bcrypt.compareSync(password || "", ADMIN_HASH)) {
+    const match = ADMIN_HASH && await bcrypt.compare(password || "", ADMIN_HASH);
+    if (match) {
       (req.session as any).authenticated = true;
       res.json({ success: true });
     } else {
@@ -42,12 +68,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!svc) return res.status(404).json({ error: "Service not found" });
     res.json(svc);
   });
-  app.post("/api/services", (req, res) => {
-    const svc = storage.createService(req.body);
+  app.post("/api/services", validate(insertServiceSchema), (req, res) => {
+    const svc = storage.createService(req.validated);
     res.status(201).json(svc);
   });
-  app.patch("/api/services/:id", (req, res) => {
-    const svc = storage.updateService(Number(req.params.id), req.body);
+  app.patch("/api/services/:id", validate(insertServiceSchema.partial()), (req, res) => {
+    const svc = storage.updateService(Number(req.params.id), req.validated);
     if (!svc) return res.status(404).json({ error: "Service not found" });
     res.json(svc);
   });
@@ -66,12 +92,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!client) return res.status(404).json({ error: "Client not found" });
     res.json(client);
   });
-  app.post("/api/clients", (req, res) => {
-    const client = storage.createClient(req.body);
+  app.post("/api/clients", validate(insertClientSchema), (req, res) => {
+    const client = storage.createClient(req.validated);
     res.status(201).json(client);
   });
-  app.patch("/api/clients/:id", (req, res) => {
-    const client = storage.updateClient(Number(req.params.id), req.body);
+  app.patch("/api/clients/:id", validate(insertClientSchema.partial()), (req, res) => {
+    const client = storage.updateClient(Number(req.params.id), req.validated);
     if (!client) return res.status(404).json({ error: "Client not found" });
     res.json(client);
   });
@@ -97,12 +123,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
     res.json(appt);
   });
-  app.post("/api/appointments", (req, res) => {
-    const appt = storage.createAppointment(req.body);
+  app.post("/api/appointments", validate(insertAppointmentSchema), (req, res) => {
+    const appt = storage.createAppointment(req.validated);
     res.status(201).json(appt);
   });
-  app.patch("/api/appointments/:id", (req, res) => {
-    const appt = storage.updateAppointment(Number(req.params.id), req.body);
+  app.patch("/api/appointments/:id", validate(insertAppointmentSchema.partial()), (req, res) => {
+    const appt = storage.updateAppointment(Number(req.params.id), req.validated);
     if (!appt) return res.status(404).json({ error: "Appointment not found" });
     res.json(appt);
   });
@@ -115,8 +141,8 @@ export async function registerRoutes(server: Server, app: Express) {
     const rec = storage.getSessionRecord(Number(req.params.appointmentId));
     res.json(rec || null);
   });
-  app.post("/api/sessions", (req, res) => {
-    const rec = storage.createSessionRecord(req.body);
+  app.post("/api/sessions", validate(insertSessionRecordSchema), (req, res) => {
+    const rec = storage.createSessionRecord(req.validated);
     res.status(201).json(rec);
   });
 
@@ -124,12 +150,12 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/package-plans", (_req, res) => {
     res.json(storage.getPackagePlans());
   });
-  app.post("/api/package-plans", (req, res) => {
-    const plan = storage.createPackagePlan(req.body);
+  app.post("/api/package-plans", validate(insertPackagePlanSchema), (req, res) => {
+    const plan = storage.createPackagePlan(req.validated);
     res.status(201).json(plan);
   });
-  app.patch("/api/package-plans/:id", (req, res) => {
-    const plan = storage.updatePackagePlan(Number(req.params.id), req.body);
+  app.patch("/api/package-plans/:id", validate(insertPackagePlanSchema.partial()), (req, res) => {
+    const plan = storage.updatePackagePlan(Number(req.params.id), req.validated);
     if (!plan) return res.status(404).json({ error: "Package plan not found" });
     res.json(plan);
   });
@@ -143,12 +169,12 @@ export async function registerRoutes(server: Server, app: Express) {
       res.json(storage.getAllClientPackages());
     }
   });
-  app.post("/api/client-packages", (req, res) => {
-    const pkg = storage.createClientPackage(req.body);
+  app.post("/api/client-packages", validate(insertClientPackageSchema), (req, res) => {
+    const pkg = storage.createClientPackage(req.validated);
     res.status(201).json(pkg);
   });
-  app.patch("/api/client-packages/:id", (req, res) => {
-    const pkg = storage.updateClientPackage(Number(req.params.id), req.body);
+  app.patch("/api/client-packages/:id", validate(insertClientPackageSchema.partial()), (req, res) => {
+    const pkg = storage.updateClientPackage(Number(req.params.id), req.validated);
     if (!pkg) return res.status(404).json({ error: "Client package not found" });
     res.json(pkg);
   });
@@ -162,8 +188,8 @@ export async function registerRoutes(server: Server, app: Express) {
       res.json(storage.getPayments());
     }
   });
-  app.post("/api/payments", (req, res) => {
-    const payment = storage.createPayment(req.body);
+  app.post("/api/payments", validate(insertPaymentSchema), (req, res) => {
+    const payment = storage.createPayment(req.validated);
     res.status(201).json(payment);
   });
 
@@ -226,8 +252,18 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(w);
   });
 
-  // ── Sign Waiver (client action) ───────────────────────
+  // ── Sign Waiver (admin action) ────────────────────────
   app.post("/api/clients/:id/sign-waiver", (req, res) => {
+    const updated = storage.updateClient(Number(req.params.id), {
+      waiverSigned: true,
+      waiverSignedAt: new Date().toISOString(),
+    });
+    if (!updated) return res.status(404).json({ error: "Client not found" });
+    res.json(updated);
+  });
+
+  // ── Sign Waiver (public — onboarding flow) ────────────
+  app.post("/api/public/sign-waiver/:id", (req, res) => {
     const updated = storage.updateClient(Number(req.params.id), {
       waiverSigned: true,
       waiverSignedAt: new Date().toISOString(),
@@ -276,12 +312,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!item) return res.status(404).json({ error: "Item not found" });
     res.json(item);
   });
-  app.post("/api/inventory", (req, res) => {
-    const item = storage.createInventoryItem(req.body);
+  app.post("/api/inventory", validate(insertInventoryItemSchema), (req, res) => {
+    const item = storage.createInventoryItem(req.validated);
     res.status(201).json(item);
   });
-  app.patch("/api/inventory/:id", (req, res) => {
-    const item = storage.updateInventoryItem(Number(req.params.id), req.body);
+  app.patch("/api/inventory/:id", validate(insertInventoryItemSchema.partial()), (req, res) => {
+    const item = storage.updateInventoryItem(Number(req.params.id), req.validated);
     if (!item) return res.status(404).json({ error: "Item not found" });
     res.json(item);
   });
@@ -490,8 +526,8 @@ export async function registerRoutes(server: Server, app: Express) {
     });
     res.status(201).json(gc);
   });
-  app.patch("/api/gift-cards/:id", (req, res) => {
-    const gc = storage.updateGiftCard(Number(req.params.id), req.body);
+  app.patch("/api/gift-cards/:id", validate(insertGiftCardSchema.partial()), (req, res) => {
+    const gc = storage.updateGiftCard(Number(req.params.id), req.validated);
     if (!gc) return res.status(404).json({ error: "Gift card not found" });
     res.json(gc);
   });
@@ -517,15 +553,12 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/waitlist/date/:date", (req, res) => {
     res.json(storage.getWaitlistByDate(req.params.date));
   });
-  app.post("/api/waitlist", (req, res) => {
-    const entry = storage.createWaitlistEntry({
-      ...req.body,
-      createdAt: new Date().toISOString().split("T")[0],
-    });
+  app.post("/api/waitlist", validate(insertWaitlistSchema), (req, res) => {
+    const entry = storage.createWaitlistEntry(req.validated);
     res.status(201).json(entry);
   });
-  app.patch("/api/waitlist/:id", (req, res) => {
-    const entry = storage.updateWaitlistEntry(Number(req.params.id), req.body);
+  app.patch("/api/waitlist/:id", validate(insertWaitlistSchema.partial()), (req, res) => {
+    const entry = storage.updateWaitlistEntry(Number(req.params.id), req.validated);
     if (!entry) return res.status(404).json({ error: "Waitlist entry not found" });
     res.json(entry);
   });
@@ -543,12 +576,12 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/promo-codes", (_req, res) => {
     res.json(storage.getPromoCodes());
   });
-  app.post("/api/promo-codes", (req, res) => {
-    const pc = storage.createPromoCode({ ...req.body, createdAt: new Date().toISOString().split("T")[0] });
+  app.post("/api/promo-codes", validate(insertPromoCodeSchema), (req, res) => {
+    const pc = storage.createPromoCode(req.validated);
     res.status(201).json(pc);
   });
-  app.patch("/api/promo-codes/:id", (req, res) => {
-    const pc = storage.updatePromoCode(Number(req.params.id), req.body);
+  app.patch("/api/promo-codes/:id", validate(insertPromoCodeSchema.partial()), (req, res) => {
+    const pc = storage.updatePromoCode(Number(req.params.id), req.validated);
     if (!pc) return res.status(404).json({ error: "Promo code not found" });
     res.json(pc);
   });
