@@ -2,6 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import session from "express-session";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 const app = express();
 const httpServer = createServer(app);
@@ -12,6 +15,50 @@ declare module "http" {
   }
 }
 
+// ── Security Headers ────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled for dev/iframe compat
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ── Session Auth ────────────────────────────────────────
+app.use(session({
+  secret: process.env.SESSION_SECRET || "bronzbliss-secret-key-change-in-prod",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production" && !!process.env.RAILWAY_ENVIRONMENT,
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: "lax",
+  },
+}));
+
+// ── Rate Limiting ───────────────────────────────────────
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5,
+  message: { error: "Too many login attempts. Try again in a minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth/login", loginLimiter);
+
+const bookingLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: "Too many requests. Please slow down." },
+});
+app.use("/api/public/book", bookingLimiter);
+
+// General API rate limit
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+});
+app.use("/api/", apiLimiter);
+
+// ── Body Parsing ────────────────────────────────────────
 app.use(
   express.json({
     verify: (req, _res, buf) => {
@@ -19,8 +66,35 @@ app.use(
     },
   }),
 );
-
 app.use(express.urlencoded({ extended: false }));
+
+// ── API Auth Middleware ─────────────────────────────────
+// Protect admin routes — public routes are exempt
+const publicPaths = [
+  "/api/auth/",
+  "/api/public/",
+  "/api/seed",
+  "/api/intake-questions",
+  "/api/intake-responses",
+  "/api/waiver-templates/active",
+  "/api/clients/", // for onboarding sign-waiver
+];
+
+app.use("/api/", (req: Request, res: Response, next: NextFunction) => {
+  // Allow public paths
+  if (publicPaths.some(p => req.path.startsWith(p.replace("/api", "")))) {
+    return next();
+  }
+  // Allow if session is authenticated
+  if ((req.session as any)?.authenticated) {
+    return next();
+  }
+  // In dev mode, allow all
+  if (process.env.NODE_ENV !== "production") {
+    return next();
+  }
+  return res.status(401).json({ error: "Unauthorized" });
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -29,7 +103,6 @@ export function log(message: string, source = "express") {
     second: "2-digit",
     hour12: true,
   });
-
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
@@ -51,7 +124,6 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       log(logLine);
     }
   });
@@ -61,25 +133,17 @@ app.use((req, res, next) => {
 
 (async () => {
   console.log("Starting Bronz Bliss server...");
-  console.log(`Node ${process.version}, PORT=${process.env.PORT || '5000'}`);
+  console.log(`Node ${process.version}, PORT=${process.env.PORT || '5000'}, ENV=${process.env.NODE_ENV || 'development'}`);
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     console.error("Internal Server Error:", err);
-
-    if (res.headersSent) {
-      return next(err);
-    }
-
+    if (res.headersSent) return next(err);
     return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -87,18 +151,8 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  httpServer.listen({ port, host: "0.0.0.0" }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

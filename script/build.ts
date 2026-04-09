@@ -28,6 +28,9 @@ const allowlist = [
   "xlsx",
   "zod",
   "zod-validation-error",
+  "bcryptjs",
+  "helmet",
+  "express-rate-limit",
 ];
 
 async function buildAll() {

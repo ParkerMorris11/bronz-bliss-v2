@@ -30,7 +30,7 @@ import GiftCardsPage from "@/pages/gift-cards";
 import WaitlistPage from "@/pages/waitlist-page";
 import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 
 function ThemeToggle() {
@@ -50,6 +50,15 @@ function SeedOnMount() {
 function AppShell() {
   const [location] = useHashLocation();
   const [authed, setAuthed] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Check if session is still valid on load
+  useEffect(() => {
+    apiRequest("GET", "/api/auth/check")
+      .then(r => r.json())
+      .then(data => { setAuthed(data.authenticated); setAuthChecked(true); })
+      .catch(() => setAuthChecked(true));
+  }, []);
 
   // Public routes — no login required
   const isBooking = location === "/book" || location.startsWith("/book/");

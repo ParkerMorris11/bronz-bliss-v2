@@ -1,17 +1,30 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
+
+// Hash the admin password on startup
+const ADMIN_HASH = bcrypt.hashSync(process.env.ADMIN_PASSWORD || "bronzbliss", 10);
 
 export async function registerRoutes(server: Server, app: Express) {
   // ── Auth ──────────────────────────────────────────────
   app.post("/api/auth/login", (req, res) => {
     const { password } = req.body;
-    const adminPassword = process.env.ADMIN_PASSWORD || "bronzbliss";
-    if (password === adminPassword) {
+    if (bcrypt.compareSync(password || "", ADMIN_HASH)) {
+      (req.session as any).authenticated = true;
       res.json({ success: true });
     } else {
       res.status(401).json({ success: false, error: "Wrong password" });
     }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {});
+    res.json({ success: true });
+  });
+
+  app.get("/api/auth/check", (req, res) => {
+    res.json({ authenticated: !!(req.session as any)?.authenticated });
   });
 
   // ── Dashboard ─────────────────────────────────────────
