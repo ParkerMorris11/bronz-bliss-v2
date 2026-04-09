@@ -553,12 +553,12 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ message: "Already seeded" });
     }
 
-    // Services
-    const s1 = storage.createService({ name: "Full Body Spray Tan", description: "Custom airbrush full body application", duration: 30, price: 45, category: "spray_tan", isActive: true });
-    const s2 = storage.createService({ name: "Express Spray Tan", description: "Quick dry formula, 1-hour rinse", duration: 20, price: 35, category: "spray_tan", isActive: true });
-    const s3 = storage.createService({ name: "Booth Tan - Standard", description: "UV-free booth session", duration: 10, price: 20, category: "booth_tan", isActive: true });
-    const s4 = storage.createService({ name: "Tanning Bed - 15 min", description: "Standard UV bed session", duration: 15, price: 15, category: "bed_tan", isActive: true });
-    const s5 = storage.createService({ name: "Rapid Spray Tan", description: "2-hour develop, darker result", duration: 25, price: 55, category: "spray_tan", isActive: true });
+    // Services — matches Izzy's real Bronz Bliss menu
+    const s1 = storage.createService({ name: "The Custom Tan", description: "Choice of Rapid (3-5 hr) or Signature (8-12 hr) solution. Includes skin consultation, complimentary disposables, barrier cream & shimmer finishing powder.", duration: 20, price: 35, category: "spray_tan", isActive: true });
+    const s2 = storage.createService({ name: "The Icon Tan (Ultra Dark)", description: "Our darkest, most dramatic bronze. Ultra-deep solution for maximum depth and tone. 8-12 hour rinse. Lasts 10-14 days with proper prep.", duration: 20, price: 45, category: "spray_tan", isActive: true });
+    const s3 = storage.createService({ name: "The Contour Tan", description: "Full-body contouring with strategic shading & highlighting. Face, arms, legs, stomach & back. Airbrushed, but real life.", duration: 30, price: 55, category: "spray_tan", isActive: true });
+    const s4 = storage.createService({ name: "Hydration Add-On", description: "Glow primer infused with skin-loving ingredients & pH balancing tech. Pre-tan hydration + post-spray lock for 30-40% longer lasting results.", duration: 10, price: 10, category: "add_on", isActive: true });
+    const s5 = storage.createService({ name: "Mini Contour Add-On", description: "Sculpt two key areas of your choice: Face, Arms, Legs, Stomach, or Back. Definition without the full-body commitment.", duration: 10, price: 15, category: "add_on", isActive: true });
 
     // Clients
     const today = new Date().toISOString().split("T")[0];
@@ -628,10 +628,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
     // Business Settings
     storage.updateBusinessSettings({
-      businessName: "Bronz Bliss",
+      businessName: "BRONZ Bliss",
       phone: "435-555-0200",
       email: "hello@bronzbliss.com",
-      address: "123 Main Street, Cedar City, UT 84720",
+      address: "Cedar City, UT",
       timezone: "America/Denver",
       depositRequired: true,
       depositAmount: 10,

@@ -352,14 +352,61 @@ export default function CalendarPage() {
                         </Link>
                       </p>
                       {client?.phone && <p className="text-xs text-muted-foreground">{client.phone}</p>}
-                      {client?.skinType && <p className="text-xs text-muted-foreground">Skin: {client.skinType}</p>}
-                      {client?.allergies && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" /> {client.allergies}
-                        </p>
-                      )}
+                      {client?.email && <p className="text-xs text-muted-foreground">{client.email}</p>}
                     </div>
                   </div>
+
+                  {/* Client details card */}
+                  {client && (
+                    <div className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {client.skinType && (
+                          <div>
+                            <span className="text-muted-foreground">Skin Type</span>
+                            <p className="font-medium">{client.skinType}</p>
+                          </div>
+                        )}
+                        {client.preferredFormula && (
+                          <div>
+                            <span className="text-muted-foreground">Formula</span>
+                            <p className="font-medium">{client.preferredFormula}</p>
+                          </div>
+                        )}
+                      </div>
+                      {client.allergies && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/5 rounded-lg p-2">
+                          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                          <span>{client.allergies}</span>
+                        </div>
+                      )}
+                      {client.notes && (
+                        <p className="text-xs text-muted-foreground italic">{client.notes}</p>
+                      )}
+                      <div className="flex gap-1.5">
+                        {client.intakeCompleted ? (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800">
+                            Intake Done
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                            No Intake
+                          </Badge>
+                        )}
+                        {client.waiverSigned ? (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800">
+                            Waiver Signed
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                            No Waiver
+                          </Badge>
+                        )}
+                        {selectedAppt.source === "booking_link" && (
+                          <Badge variant="outline" className="text-[9px] px-1.5 py-0">Online Booking</Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <Separator />
 
@@ -387,10 +434,14 @@ export default function CalendarPage() {
                     <p className="text-xs text-muted-foreground italic border-l-2 pl-3">{selectedAppt.notes}</p>
                   )}
 
-                  {client?.preferredFormula && (
-                    <div className="text-xs bg-muted/50 rounded-lg p-3">
-                      <span className="text-muted-foreground">Preferred formula:</span>{" "}
-                      <span className="font-medium">{client.preferredFormula}</span>
+                  {/* Send onboarding link */}
+                  {client && (!client.intakeCompleted || !client.waiverSigned) && (
+                    <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+                      <p className="text-xs font-medium">Client needs to complete onboarding</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">Send them this link to fill out intake form + sign waiver:</p>
+                      <code className="text-[10px] bg-background rounded px-2 py-1 border block truncate">
+                        {window.location.origin}{window.location.pathname}#/onboard/{client.id}
+                      </code>
                     </div>
                   )}
 
