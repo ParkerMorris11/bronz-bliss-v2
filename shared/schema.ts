@@ -218,3 +218,38 @@ export const businessSettings = sqliteTable("business_settings", {
 export const insertBusinessSettingsSchema = createInsertSchema(businessSettings).omit({ id: true });
 export type InsertBusinessSettings = z.infer<typeof insertBusinessSettingsSchema>;
 export type BusinessSettings = typeof businessSettings.$inferSelect;
+
+// ── Gift Cards ────────────────────────────────────────────
+export const giftCards = sqliteTable("gift_cards", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  code: text("code").notNull(),
+  initialAmount: real("initial_amount").notNull(),
+  balance: real("balance").notNull(),
+  purchaserName: text("purchaser_name"),
+  recipientName: text("recipient_name"),
+  recipientEmail: text("recipient_email"),
+  status: text("status").notNull().default("active"), // active, used, expired
+  expiresAt: text("expires_at"),
+  createdAt: text("created_at").notNull(),
+});
+export const insertGiftCardSchema = createInsertSchema(giftCards).omit({ id: true });
+export type InsertGiftCard = z.infer<typeof insertGiftCardSchema>;
+export type GiftCard = typeof giftCards.$inferSelect;
+
+// ── Waitlist ──────────────────────────────────────────────
+export const waitlist = sqliteTable("waitlist", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  clientId: integer("client_id"),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  serviceId: integer("service_id").notNull(),
+  preferredDate: text("preferred_date").notNull(),
+  status: text("status").notNull().default("waiting"), // waiting, notified, booked, expired
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+export const insertWaitlistSchema = createInsertSchema(waitlist).omit({ id: true });
+export type InsertWaitlist = z.infer<typeof insertWaitlistSchema>;
+export type Waitlist = typeof waitlist.$inferSelect;

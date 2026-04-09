@@ -21,6 +21,8 @@ import ReportsPage from "@/pages/reports";
 import InventoryPage from "@/pages/inventory";
 import SettingsPage from "@/pages/settings";
 import BookingPage from "@/pages/booking";
+import GiftCardsPage from "@/pages/gift-cards";
+import WaitlistPage from "@/pages/waitlist-page";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { apiRequest } from "@/lib/queryClient";
@@ -62,7 +64,7 @@ function AppShell() {
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <ThemeToggle />
           </header>
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto glass-bg">
             <Switch>
               <Route path="/" component={Dashboard} />
               <Route path="/calendar" component={CalendarPage} />
@@ -75,6 +77,8 @@ function AppShell() {
               <Route path="/reports" component={ReportsPage} />
               <Route path="/inventory" component={InventoryPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/gift-cards" component={GiftCardsPage} />
+              <Route path="/waitlist" component={WaitlistPage} />
               <Route component={NotFound} />
             </Switch>
           </main>

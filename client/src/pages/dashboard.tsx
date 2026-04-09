@@ -55,8 +55,8 @@ export default function Dashboard() {
           { label: "Revenue", value: `$${data?.monthRevenue?.toFixed(0) ?? 0}`, sub: "this month", icon: DollarSign },
           { label: "Active", value: data?.activePackages ?? 0, sub: "packages", icon: Package },
         ].map((kpi, i) => (
-          <Card key={i} data-testid={`card-kpi-${i}`}>
-            <CardContent className="p-4">
+          <Card key={i} data-testid={`card-kpi-${i}`} className="relative overflow-hidden">
+            <CardContent className="p-4 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">{kpi.label}</p>
@@ -67,11 +67,13 @@ export default function Dashboard() {
                   )}
                   <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>
                 </div>
-                <div className="p-2 rounded-lg bg-primary/8">
-                  <kpi.icon className="w-4 h-4 text-primary/70" />
+                <div className="p-2.5 rounded-xl bg-primary/8">
+                  <kpi.icon className="w-4.5 h-4.5 text-primary/60" />
                 </div>
               </div>
             </CardContent>
+            {/* Subtle gradient orb */}
+            <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/[0.04] blur-2xl" />
           </Card>
         ))}
       </div>

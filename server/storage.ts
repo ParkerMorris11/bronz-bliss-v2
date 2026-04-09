@@ -16,6 +16,8 @@ import {
   inventoryItems, type InsertInventoryItem, type InventoryItem,
   inventoryUsage, type InsertInventoryUsage, type InventoryUsage,
   businessSettings, type InsertBusinessSettings, type BusinessSettings,
+  giftCards, type InsertGiftCard, type GiftCard,
+  waitlist, type InsertWaitlist, type Waitlist,
 } from "@shared/schema";
 
 const sqlite = new Database("glowcrm.db");
@@ -169,6 +171,31 @@ sqlite.exec(`
     rebooking_template TEXT,
     operating_hours TEXT
   );
+  CREATE TABLE IF NOT EXISTS gift_cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    initial_amount REAL NOT NULL,
+    balance REAL NOT NULL,
+    purchaser_name TEXT,
+    recipient_name TEXT,
+    recipient_email TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    expires_at TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone TEXT,
+    email TEXT,
+    service_id INTEGER NOT NULL,
+    preferred_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    notes TEXT,
+    created_at TEXT NOT NULL
+  );
 `);
 
 export interface IStorage {
@@ -264,6 +291,23 @@ export interface IStorage {
   getNoShowRate(startDate: string, endDate: string): { total: number; noShows: number };
   getRebookingRate(startDate: string, endDate: string): { total: number; rebooked: number };
   getPopularServices(startDate: string, endDate: string): { serviceId: number; name: string; count: number }[];
+
+  // Gift Cards
+  getGiftCards(): GiftCard[];
+  getGiftCard(id: number): GiftCard | undefined;
+  getGiftCardByCode(code: string): GiftCard | undefined;
+  createGiftCard(data: InsertGiftCard): GiftCard;
+  updateGiftCard(id: number, data: Partial<InsertGiftCard>): GiftCard | undefined;
+
+  // Waitlist
+  getWaitlist(): Waitlist[];
+  getWaitlistByDate(date: string): Waitlist[];
+  createWaitlistEntry(data: InsertWaitlist): Waitlist;
+  updateWaitlistEntry(id: number, data: Partial<InsertWaitlist>): Waitlist | undefined;
+  deleteWaitlistEntry(id: number): void;
+
+  // Analytics v2
+  getClientLifetimeValues(): { clientId: number; name: string; totalSpent: number; visits: number; firstVisit: string; lastVisit: string }[];
 }
 
 export class DatabaseStorage implements IStorage {
@@ -604,6 +648,64 @@ export class DatabaseStorage implements IStorage {
       const svc = db.select().from(services).where(eq(services.id, r.serviceId)).get();
       return { serviceId: r.serviceId, name: svc?.name ?? "Unknown", count: r.count };
     });
+  }
+
+  // ── Gift Cards ──────────────────────────────────────────
+  getGiftCards(): GiftCard[] {
+    return db.select().from(giftCards).orderBy(desc(giftCards.createdAt)).all();
+  }
+  getGiftCard(id: number): GiftCard | undefined {
+    return db.select().from(giftCards).where(eq(giftCards.id, id)).get();
+  }
+  getGiftCardByCode(code: string): GiftCard | undefined {
+    return db.select().from(giftCards).where(eq(giftCards.code, code)).get();
+  }
+  createGiftCard(data: InsertGiftCard): GiftCard {
+    return db.insert(giftCards).values(data).returning().get();
+  }
+  updateGiftCard(id: number, data: Partial<InsertGiftCard>): GiftCard | undefined {
+    return db.update(giftCards).set(data).where(eq(giftCards.id, id)).returning().get();
+  }
+
+  // ── Waitlist ────────────────────────────────────────────
+  getWaitlist(): Waitlist[] {
+    return db.select().from(waitlist).orderBy(desc(waitlist.createdAt)).all();
+  }
+  getWaitlistByDate(date: string): Waitlist[] {
+    return db.select().from(waitlist)
+      .where(and(eq(waitlist.preferredDate, date), eq(waitlist.status, "waiting")))
+      .all();
+  }
+  createWaitlistEntry(data: InsertWaitlist): Waitlist {
+    return db.insert(waitlist).values(data).returning().get();
+  }
+  updateWaitlistEntry(id: number, data: Partial<InsertWaitlist>): Waitlist | undefined {
+    return db.update(waitlist).set(data).where(eq(waitlist.id, id)).returning().get();
+  }
+  deleteWaitlistEntry(id: number): void {
+    db.delete(waitlist).where(eq(waitlist.id, id)).run();
+  }
+
+  // ── Analytics v2 ────────────────────────────────────────
+  getClientLifetimeValues() {
+    const allPayments = db.select().from(payments).all();
+    const allClients = db.select().from(clients).all();
+    const allAppts = db.select().from(appointments).where(eq(appointments.status, "completed")).all();
+
+    return allClients.map(c => {
+      const clientPayments = allPayments.filter(p => p.clientId === c.id);
+      const clientAppts = allAppts.filter(a => a.clientId === c.id);
+      const totalSpent = clientPayments.reduce((sum, p) => sum + p.amount, 0);
+      const dates = clientAppts.map(a => a.date).sort();
+      return {
+        clientId: c.id,
+        name: `${c.firstName} ${c.lastName}`,
+        totalSpent,
+        visits: clientAppts.length,
+        firstVisit: dates[0] || c.createdAt,
+        lastVisit: dates[dates.length - 1] || c.createdAt,
+      };
+    }).sort((a, b) => b.totalSpent - a.totalSpent);
   }
 }
 

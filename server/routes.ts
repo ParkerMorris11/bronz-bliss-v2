@@ -441,6 +441,100 @@ export async function registerRoutes(server: Server, app: Express) {
     });
   });
 
+  // ── Gift Cards ─────────────────────────────────────────
+  app.get("/api/gift-cards", (_req, res) => {
+    res.json(storage.getGiftCards());
+  });
+  app.get("/api/gift-cards/:id", (req, res) => {
+    const gc = storage.getGiftCard(Number(req.params.id));
+    if (!gc) return res.status(404).json({ error: "Gift card not found" });
+    res.json(gc);
+  });
+  app.get("/api/gift-cards/code/:code", (req, res) => {
+    const gc = storage.getGiftCardByCode(req.params.code);
+    if (!gc) return res.status(404).json({ error: "Invalid code" });
+    res.json(gc);
+  });
+  app.post("/api/gift-cards", (req, res) => {
+    // Auto-generate code if not provided
+    const code = req.body.code || `BB-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const gc = storage.createGiftCard({
+      ...req.body,
+      code,
+      balance: req.body.initialAmount,
+      createdAt: new Date().toISOString().split("T")[0],
+    });
+    res.status(201).json(gc);
+  });
+  app.patch("/api/gift-cards/:id", (req, res) => {
+    const gc = storage.updateGiftCard(Number(req.params.id), req.body);
+    if (!gc) return res.status(404).json({ error: "Gift card not found" });
+    res.json(gc);
+  });
+  // Redeem gift card
+  app.post("/api/gift-cards/:id/redeem", (req, res) => {
+    const gc = storage.getGiftCard(Number(req.params.id));
+    if (!gc) return res.status(404).json({ error: "Gift card not found" });
+    if (gc.status !== "active") return res.status(400).json({ error: "Gift card is not active" });
+    const amount = Number(req.body.amount);
+    if (amount > gc.balance) return res.status(400).json({ error: "Insufficient balance" });
+    const newBalance = gc.balance - amount;
+    const updated = storage.updateGiftCard(gc.id, {
+      balance: newBalance,
+      status: newBalance <= 0 ? "used" : "active",
+    });
+    res.json(updated);
+  });
+
+  // ── Waitlist ───────────────────────────────────────────
+  app.get("/api/waitlist", (_req, res) => {
+    res.json(storage.getWaitlist());
+  });
+  app.get("/api/waitlist/date/:date", (req, res) => {
+    res.json(storage.getWaitlistByDate(req.params.date));
+  });
+  app.post("/api/waitlist", (req, res) => {
+    const entry = storage.createWaitlistEntry({
+      ...req.body,
+      createdAt: new Date().toISOString().split("T")[0],
+    });
+    res.status(201).json(entry);
+  });
+  app.patch("/api/waitlist/:id", (req, res) => {
+    const entry = storage.updateWaitlistEntry(Number(req.params.id), req.body);
+    if (!entry) return res.status(404).json({ error: "Waitlist entry not found" });
+    res.json(entry);
+  });
+  app.delete("/api/waitlist/:id", (req, res) => {
+    storage.deleteWaitlistEntry(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ── Analytics v2 ────────────────────────────────────────
+  app.get("/api/analytics/clv", (_req, res) => {
+    res.json(storage.getClientLifetimeValues());
+  });
+
+  // ── Review Request ─────────────────────────────────────
+  app.post("/api/review-request/:appointmentId", (req, res) => {
+    const appt = storage.getAppointment(Number(req.params.appointmentId));
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+    const client = storage.getClient(appt.clientId);
+    if (!client?.phone) return res.status(400).json({ error: "Client has no phone number" });
+    const body = `Hi ${client.firstName}! Thanks for visiting Bronz Bliss. We'd love your feedback — please leave us a review! ⭐`;
+    const log = storage.createMessageLog({
+      clientId: client.id,
+      appointmentId: appt.id,
+      type: "review_request",
+      channel: "sms",
+      to: client.phone,
+      body,
+      status: "sent",
+      sentAt: new Date().toISOString(),
+    });
+    res.status(201).json({ ...log, mock: true });
+  });
+
   // ── Seed demo data ────────────────────────────────────
   app.post("/api/seed", (_req, res) => {
     const existingServices = storage.getServices();
@@ -552,6 +646,15 @@ export async function registerRoutes(server: Server, app: Express) {
     // Message logs (sample)
     storage.createMessageLog({ clientId: c1.id, appointmentId: 1, type: "booking_confirm", channel: "sms", to: "435-555-0101", body: "Hi Sarah! Your Full Body Spray Tan is confirmed for today at 09:00.", status: "sent", sentAt: today + "T08:00:00Z" });
     storage.createMessageLog({ clientId: c4.id, appointmentId: 3, type: "prep_reminder", channel: "sms", to: "435-555-0104", body: "Reminder: Your tan appointment is today at 14:00. Please exfoliate and avoid lotions!", status: "sent", sentAt: today + "T07:00:00Z" });
+
+    // Gift Cards
+    storage.createGiftCard({ code: "BB-GLOW50", initialAmount: 50, balance: 50, purchaserName: "Mike Johnson", recipientName: "Sarah Johnson", recipientEmail: "sarah@email.com", status: "active", expiresAt: "2027-04-08", createdAt: "2026-03-15" });
+    storage.createGiftCard({ code: "BB-TAN100", initialAmount: 100, balance: 65, purchaserName: "Lisa Chen", recipientName: "Emily Chen", recipientEmail: "emily@email.com", status: "active", expiresAt: "2027-01-01", createdAt: "2026-02-14" });
+    storage.createGiftCard({ code: "BB-BRIDE", initialAmount: 200, balance: 0, purchaserName: "Olivia Taylor", recipientName: "Olivia Taylor", recipientEmail: "olivia@email.com", status: "used", expiresAt: null, createdAt: "2026-01-20" });
+
+    // Waitlist
+    storage.createWaitlistEntry({ clientId: null, firstName: "Ava", lastName: "Williams", phone: "435-555-0190", email: "ava@email.com", serviceId: s1.id, preferredDate: today, status: "waiting", notes: "First time, wants afternoon slot", createdAt: today });
+    storage.createWaitlistEntry({ clientId: null, firstName: "Sophia", lastName: "Brown", phone: "435-555-0191", email: null, serviceId: s5.id, preferredDate: today, status: "waiting", notes: null, createdAt: yesterday });
 
     res.json({ message: "Demo data seeded" });
   });
