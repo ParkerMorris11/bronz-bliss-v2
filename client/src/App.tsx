@@ -22,6 +22,7 @@ import InventoryPage from "@/pages/inventory";
 import SettingsPage from "@/pages/settings";
 import BookingPage from "@/pages/booking";
 import OnboardingPage from "@/pages/onboarding";
+import LandingPage from "@/pages/landing";
 import GiftCardsPage from "@/pages/gift-cards";
 import WaitlistPage from "@/pages/waitlist-page";
 import LoginPage from "@/pages/login";
@@ -50,8 +51,10 @@ function AppShell() {
   // Public routes — no login required
   const isBooking = location === "/book" || location.startsWith("/book/");
   const isOnboarding = location.startsWith("/onboard/");
+  const isLanding = location === "/landing";
   if (isBooking) return <BookingPage />;
   if (isOnboarding) return <OnboardingPage />;
+  if (isLanding) return <LandingPage />;
 
   // Login gate for admin
   if (!authed) {

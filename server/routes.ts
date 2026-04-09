@@ -526,6 +526,50 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(storage.getClientLifetimeValues());
   });
 
+  // ── SMS Automation ────────────────────────────────────
+  // Trigger all automated messages for an appointment
+  app.post("/api/automation/trigger/:appointmentId", (req, res) => {
+    const appt = storage.getAppointment(Number(req.params.appointmentId));
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+    const client = storage.getClient(appt.clientId);
+    if (!client?.phone) return res.status(400).json({ error: "Client has no phone" });
+    const svc = storage.getService(appt.serviceId);
+    const settings = storage.getBusinessSettings();
+    const logs: any[] = [];
+
+    const send = (type: string, template: string | null, fallback: string) => {
+      const body = (template || fallback)
+        .replace(/\{name\}/g, client.firstName)
+        .replace(/\{service\}/g, svc?.name ?? "appointment")
+        .replace(/\{date\}/g, appt.date)
+        .replace(/\{time\}/g, appt.time)
+        .replace(/\{hours\}/g, "8");
+      const log = storage.createMessageLog({
+        clientId: client.id, appointmentId: appt.id, type, channel: "sms",
+        to: client.phone!, body, status: "sent", sentAt: new Date().toISOString(),
+      });
+      logs.push(log);
+    };
+
+    const { type } = req.body; // "booking_confirm" | "prep_reminder" | "rinse_reminder" | "aftercare" | "rebooking"
+    if (type === "booking_confirm" || type === "all") {
+      send("booking_confirm", settings.confirmationTemplate, "Hi {name}! Your {service} is confirmed for {date} at {time}.");
+    }
+    if (type === "prep_reminder" || type === "all") {
+      send("prep_reminder", settings.prepTemplate, "Reminder: Your tan is tomorrow at {time}. Exfoliate tonight, no lotions day-of!");
+    }
+    if (type === "rinse_reminder" || type === "all") {
+      send("rinse_reminder", settings.rinseTemplate, "Time to rinse! Lukewarm water only, no soap. Pat dry gently.");
+    }
+    if (type === "aftercare" || type === "all") {
+      send("aftercare", settings.aftercareTemplate, "Thanks {name}! Avoid water 8 hrs, moisturize daily, no exfoliants 5 days.");
+    }
+    if (type === "rebooking" || type === "all") {
+      send("rebooking", settings.rebookingTemplate, "Hi {name}! Ready to glow again? Book your next session!");
+    }
+    res.status(201).json({ sent: logs.length, logs, mock: true, note: "SMS simulated — connect Twilio for real delivery" });
+  });
+
   // ── Review Request ─────────────────────────────────────
   app.post("/api/review-request/:appointmentId", (req, res) => {
     const appt = storage.getAppointment(Number(req.params.appointmentId));

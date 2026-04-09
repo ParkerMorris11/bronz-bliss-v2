@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Plus, ChevronLeft, ChevronRight, User, Clock, DollarSign, FileText, CalendarDays, AlertTriangle, CheckCircle } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, User, Clock, DollarSign, FileText, CalendarDays, AlertTriangle, CheckCircle, MessageSquare, Send } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -446,6 +446,40 @@ export default function CalendarPage() {
                   )}
 
                   <Separator />
+
+                  {/* SMS Automation */}
+                  <div className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" /> Send SMS
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { type: "booking_confirm", label: "Confirmation" },
+                        { type: "prep_reminder", label: "Prep Reminder" },
+                        { type: "rinse_reminder", label: "Rinse Reminder" },
+                        { type: "aftercare", label: "Aftercare" },
+                        { type: "rebooking", label: "Rebooking" },
+                      ].map(sms => (
+                        <Button
+                          key={sms.type}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] justify-start"
+                          onClick={() => {
+                            apiRequest("POST", `/api/automation/trigger/${selectedAppt.id}`, { type: sms.type })
+                              .then(() => {
+                                toast({ title: `${sms.label} sent` });
+                                queryClient.invalidateQueries({ queryKey: ["/api/message-logs"] });
+                              })
+                              .catch(() => toast({ title: "Failed to send", variant: "destructive" }));
+                          }}
+                          data-testid={`button-sms-${sms.type}`}
+                        >
+                          <Send className="w-3 h-3 mr-1" /> {sms.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Actions */}
                   <div className="space-y-2">
