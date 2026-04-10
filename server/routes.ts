@@ -166,7 +166,13 @@ export async function registerRoutes(server: Server, app: Express) {
     const match = await bcrypt.compare(password || "", adminHash);
     if (match) {
       (req.session as any).authenticated = true;
-      res.json({ success: true });
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error on login:", err);
+          return res.status(500).json({ success: false, error: "Session error" });
+        }
+        res.json({ success: true });
+      });
     } else {
       res.status(401).json({ success: false, error: "Wrong password" });
     }
