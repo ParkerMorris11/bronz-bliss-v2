@@ -349,12 +349,14 @@ function WaiverStep({
 
       {/* Waiver content */}
       <div
-        className="rounded-xl border bg-white dark:bg-stone-900 p-4 max-h-64 overflow-y-auto"
+        className="rounded-xl border bg-white dark:bg-stone-900 p-4 max-h-64 overflow-y-auto space-y-3"
         data-testid="waiver-content"
       >
-        <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-          {waiver.content}
-        </pre>
+        {waiver.content.split(/\n{2,}/).map((para, i) => (
+          <p key={i} className="text-sm text-foreground leading-relaxed">
+            {para.replace(/\n/g, " ")}
+          </p>
+        ))}
       </div>
 
       {/* Agreement checkbox */}
