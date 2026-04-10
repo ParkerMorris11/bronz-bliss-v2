@@ -9,6 +9,8 @@ import SqliteStoreFactory from "better-sqlite3-session-store";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
+// Build cache buster: force rebuild v2
+
 // ── Startup Guards ───────────────────────────────────────
 if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be set in production");
