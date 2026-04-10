@@ -13,6 +13,7 @@ import GlobalSearch from "@/components/global-search";
 import Dashboard from "@/pages/dashboard";
 import CalendarPage from "@/pages/calendar";
 import ClientsPage from "@/pages/clients";
+import ClientCardsPage from "@/pages/client-cards";
 import ClientDetailPage from "@/pages/client-detail";
 import ServicesPage from "@/pages/services";
 import PackagesPage from "@/pages/packages";
@@ -102,6 +103,7 @@ function AppShell() {
               <Route path="/" component={Dashboard} />
               <Route path="/calendar" component={CalendarPage} />
               <Route path="/clients" component={ClientsPage} />
+              <Route path="/clients/cards" component={ClientCardsPage} />
               <Route path="/clients/:id" component={ClientDetailPage} />
               <Route path="/services" component={ServicesPage} />
               <Route path="/packages" component={PackagesPage} />

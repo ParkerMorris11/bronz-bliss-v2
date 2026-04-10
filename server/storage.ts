@@ -264,6 +264,7 @@ export interface IStorage {
   // Client Packages
   getClientPackages(clientId: number): ClientPackage[];
   getAllClientPackages(): ClientPackage[];
+  getAllClientPackages(): ClientPackage[];
   createClientPackage(data: InsertClientPackage): ClientPackage;
   updateClientPackage(id: number, data: Partial<InsertClientPackage>): ClientPackage | undefined;
 
@@ -478,13 +479,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ── Client Packages ──────────────────────────────────
+  getAllClientPackages(): ClientPackage[] {
+    return db.select().from(clientPackages).all();
+  }
   getClientPackages(clientId: number): ClientPackage[] {
     return db.select().from(clientPackages)
       .where(eq(clientPackages.clientId, clientId))
       .all();
-  }
-  getAllClientPackages(): ClientPackage[] {
-    return db.select().from(clientPackages).all();
   }
   createClientPackage(data: InsertClientPackage): ClientPackage {
     return db.insert(clientPackages).values(data).returning().get();

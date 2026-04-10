@@ -223,6 +223,28 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ── Clients ───────────────────────────────────────────
+  app.get("/api/clients/cards", (_req, res) => {
+    const clients = storage.getClients();
+    const lifetime = storage.getClientLifetimeValues();
+    const lifetimeMap = new Map(lifetime.map(l => [l.clientId, l]));
+    const allPackages = storage.getAllClientPackages();
+    const packageMap = new Map<number, "active" | "expired">();
+    for (const pkg of allPackages) {
+      if (pkg.status === "active" && pkg.sessionsRemaining > 0) {
+        packageMap.set(pkg.clientId, "active");
+      } else if (!packageMap.has(pkg.clientId)) {
+        packageMap.set(pkg.clientId, "expired");
+      }
+    }
+    const cards = clients.map(c => ({
+      ...c,
+      visits: lifetimeMap.get(c.id)?.visits ?? 0,
+      lastVisit: lifetimeMap.get(c.id)?.lastVisit ?? null,
+      membership: packageMap.get(c.id) ?? "none",
+    }));
+    res.json(cards);
+  });
+
   app.get("/api/clients", (req, res) => {
     const q = req.query.q as string | undefined;
     if (q) {
