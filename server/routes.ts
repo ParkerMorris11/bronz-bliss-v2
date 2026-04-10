@@ -240,6 +240,41 @@ export async function registerRoutes(server: Server, app: Express) {
     const client = storage.createClient(req.validated);
     res.status(201).json(client);
   });
+
+  app.post("/api/clients/import", (req, res) => {
+    const rows: unknown[] = req.body?.rows;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: "No rows provided" });
+    }
+    const today = new Date().toISOString().split("T")[0];
+    let imported = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+    for (const row of rows) {
+      const r = row as Record<string, string>;
+      const firstName = r.firstName?.trim();
+      const lastName = r.lastName?.trim();
+      if (!firstName || !lastName) { skipped++; continue; }
+      try {
+        storage.createClient({
+          firstName,
+          lastName,
+          phone: r.phone?.trim() || null,
+          email: r.email?.trim() || null,
+          skinType: r.skinType?.trim() || null,
+          allergies: r.allergies?.trim() || null,
+          notes: r.notes?.trim() || null,
+          preferredFormula: r.preferredFormula?.trim() || null,
+          createdAt: today,
+        });
+        imported++;
+      } catch (e: any) {
+        errors.push(`${firstName} ${lastName}: ${e.message}`);
+        skipped++;
+      }
+    }
+    res.json({ imported, skipped, errors });
+  });
   app.patch("/api/clients/:id", validate(insertClientSchema.partial()), (req, res) => {
     const client = storage.updateClient(Number(req.params.id), req.validated);
     if (!client) return res.status(404).json({ error: "Client not found" });

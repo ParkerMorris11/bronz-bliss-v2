@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, User, CheckCircle, AlertTriangle } from "lucide-react";
+import { Plus, Search, User, CheckCircle, AlertTriangle, Upload } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -16,9 +16,39 @@ import type { Client } from "@shared/schema";
 
 const skinTypes = ["Type I", "Type II", "Type III", "Type IV", "Type V", "Type VI"];
 
+// Maps common CSV column header variations to our field names
+const COLUMN_MAP: Record<string, string> = {
+  "first name": "firstName", firstname: "firstName", "first_name": "firstName",
+  "last name": "lastName", lastname: "lastName", "last_name": "lastName",
+  phone: "phone", "phone number": "phone", mobile: "phone", cell: "phone",
+  email: "email", "email address": "email",
+  "skin type": "skinType", skintype: "skinType", skin: "skinType",
+  allergies: "allergies", sensitivities: "allergies",
+  notes: "notes", note: "notes", comments: "notes",
+  formula: "preferredFormula", "preferred formula": "preferredFormula",
+};
+
+function parseCSV(text: string): Record<string, string>[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim().toLowerCase());
+  const mapped = headers.map(h => COLUMN_MAP[h] ?? h);
+  return lines.slice(1).map(line => {
+    const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) ?? line.split(",");
+    const row: Record<string, string> = {};
+    mapped.forEach((key, i) => {
+      row[key] = (vals[i] ?? "").replace(/^"|"$/g, "").trim();
+    });
+    return row;
+  }).filter(row => row.firstName || row.lastName);
+}
+
 export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [preview, setPreview] = useState<Record<string, string>[]>([]);
+  const [importing, setImporting] = useState(false);
   const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery<Client[]>({
@@ -34,6 +64,38 @@ export default function ClientsPage() {
       toast({ title: "Client added" });
     },
   });
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const rows = parseCSV(ev.target?.result as string);
+      setPreview(rows);
+    };
+    reader.readAsText(file);
+  }
+
+  async function handleImport() {
+    if (!preview.length) return;
+    setImporting(true);
+    try {
+      const res = await apiRequest("POST", "/api/clients/import", { rows: preview });
+      const result = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({
+        title: `Imported ${result.imported} client${result.imported !== 1 ? "s" : ""}`,
+        description: result.skipped > 0 ? `${result.skipped} row${result.skipped !== 1 ? "s" : ""} skipped` : undefined,
+      });
+      setImportOpen(false);
+      setPreview([]);
+    } catch {
+      toast({ title: "Import failed", description: "Check your CSV and try again.", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,12 +124,58 @@ export default function ClientsPage() {
         <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Cabinet Grotesk', sans-serif" }}>
           Clients
         </h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" data-testid="button-new-client">
-              <Plus className="w-4 h-4 mr-1" /> New Client
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {/* Import CSV */}
+          <Dialog open={importOpen} onOpenChange={(v) => { setImportOpen(v); if (!v) setPreview([]); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Upload className="w-4 h-4 mr-1" /> Import CSV
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Import Clients from CSV</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Your CSV should have columns like <span className="font-mono bg-muted px-1 rounded">First Name</span>, <span className="font-mono bg-muted px-1 rounded">Last Name</span>, <span className="font-mono bg-muted px-1 rounded">Phone</span>, <span className="font-mono bg-muted px-1 rounded">Email</span>. Column names are flexible.
+                </p>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-input file:text-xs file:font-medium file:bg-background hover:file:bg-muted cursor-pointer"
+                />
+                {preview.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">{preview.length} client{preview.length !== 1 ? "s" : ""} ready to import — preview:</p>
+                    <div className="rounded-lg border divide-y max-h-48 overflow-y-auto">
+                      {preview.slice(0, 5).map((row, i) => (
+                        <div key={i} className="px-3 py-2 text-xs">
+                          <span className="font-medium">{row.firstName} {row.lastName}</span>
+                          {row.phone && <span className="text-muted-foreground ml-2">{row.phone}</span>}
+                          {row.email && <span className="text-muted-foreground ml-2">{row.email}</span>}
+                        </div>
+                      ))}
+                      {preview.length > 5 && (
+                        <div className="px-3 py-2 text-xs text-muted-foreground">+ {preview.length - 5} more</div>
+                      )}
+                    </div>
+                    <Button className="w-full" onClick={handleImport} disabled={importing}>
+                      {importing ? "Importing..." : `Import ${preview.length} Client${preview.length !== 1 ? "s" : ""}`}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" data-testid="button-new-client">
+                <Plus className="w-4 h-4 mr-1" /> New Client
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>New Client</DialogTitle>
