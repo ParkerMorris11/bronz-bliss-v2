@@ -1,0 +1,8 @@
+node_modules/
+.next/
+dist/
+build/
+*.png
+*.jpg
+*.mp4
+.env*
