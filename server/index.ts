@@ -49,12 +49,13 @@ app.use(session({
   secret: process.env.SESSION_SECRET || "bronzbliss-dev-secret",
   resave: false,
   saveUninitialized: false,
+  proxy: true, // trust X-Forwarded-Proto from Railway's TLS-terminating proxy
   store: new SqliteStore({
     client: sessionDb,
     expired: { clear: true, intervalMs: 900000 }, // prune expired every 15min
   }),
   cookie: {
-    secure: process.env.NODE_ENV === "production" && !!process.env.RAILWAY_ENVIRONMENT,
+    secure: process.env.NODE_ENV === "production",
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     sameSite: "lax",
