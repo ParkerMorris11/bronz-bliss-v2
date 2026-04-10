@@ -174,7 +174,7 @@ export async function registerRoutes(server: Server, app: Express) {
         res.json({ success: true });
       });
     } else {
-      res.status(401).json({ success: false, error: "Wrong password" });
+      res.status(200).json({ success: false, error: "Wrong password" });
     }
   });
 
