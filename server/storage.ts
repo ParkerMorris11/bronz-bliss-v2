@@ -138,11 +138,17 @@ export async function initDb() {
 // We normalise everything to async so the routes work identically.
 
 async function one<T>(q: any): Promise<T | undefined> {
-  if (isPostgres) return (await q) as T | undefined;
+  if (isPostgres) {
+    const rows = await q;
+    return (Array.isArray(rows) ? rows[0] : rows) as T | undefined;
+  }
   return q.get() as T | undefined;
 }
 async function many<T>(q: any): Promise<T[]> {
-  if (isPostgres) return (await q) as T[];
+  if (isPostgres) {
+    const rows = await q;
+    return (Array.isArray(rows) ? rows : [rows]) as T[];
+  }
   return q.all() as T[];
 }
 
