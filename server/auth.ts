@@ -17,7 +17,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { isPostgres, pool } from "./db";
 
 // Default hash for "bronzbliss2024" — override with ADMIN_PASSWORD_HASH in prod
-const DEFAULT_HASH = "$2b$10$WpJ.RoTEn5qkuEGrTMCxZeK7r6cIK5vGHXF1G9XVk8AUJP2P7bk8u";
+const DEFAULT_HASH = "$2b$10$s/jYb1lfhvTUh9Le4900bux0gm.qU6.JE20JIHvgc/tCx6YvYWEeu";
 
 declare module "express-session" {
   interface SessionData {
