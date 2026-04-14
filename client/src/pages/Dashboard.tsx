@@ -1,7 +1,27 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import type { DashboardData } from "../../../server/storage";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function ClientLink({ name, clientId }: { name: string; clientId?: number }) {
+  const [, navigate] = useLocation();
+  if (!clientId) return <span>{name}</span>;
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); navigate(`/clients?id=${clientId}`); }}
+      style={{
+        background: "none", border: "none", padding: 0, margin: 0,
+        color: "inherit", fontWeight: "inherit", fontSize: "inherit",
+        cursor: "pointer", textDecoration: "none",
+        borderBottom: "1px dashed rgba(231,181,111,0.3)",
+        transition: "border-color 0.15s",
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderBottomColor = "rgba(231,181,111,0.7)")}
+      onMouseLeave={e => (e.currentTarget.style.borderBottomColor = "rgba(231,181,111,0.3)")}
+    >{name}</button>
+  );
+}
 
 const TODAY = new Date().toISOString().slice(0, 10);
 const WEEKDAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -97,7 +117,7 @@ export default function Dashboard() {
               <div style={{ fontSize: "0.72rem", color: "var(--amber)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
                 Next Up · {fmtTime(todayBookings.nextClient.time)}
               </div>
-              <div style={{ fontWeight: 700, fontSize: "1rem" }}>{todayBookings.nextClient.clientName}</div>
+              <div style={{ fontWeight: 700, fontSize: "1rem" }}><ClientLink name={todayBookings.nextClient.clientName} clientId={todayBookings.nextClient.clientId} /></div>
               <div style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
                 {todayBookings.nextClient.serviceName}
               </div>
@@ -205,7 +225,7 @@ export default function Dashboard() {
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{pkg.clientName}</div>
+                    <div style={{ fontWeight: 600, fontSize: "0.88rem" }}><ClientLink name={pkg.clientName} clientId={pkg.clientId} /></div>
                     <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{pkg.name}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -404,7 +424,7 @@ function ApptRow({ appt }: { appt: any }) {
           flexShrink: 0,
         }} />
         <div>
-          <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{appt.clientName}</div>
+          <div style={{ fontWeight: 600, fontSize: "0.875rem" }}><ClientLink name={appt.clientName} clientId={appt.clientId} /></div>
           <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)" }}>{appt.serviceName}</div>
         </div>
       </div>
@@ -430,7 +450,7 @@ function CheckInRow({ appt }: { appt: any }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{appt.clientName}</div>
+          <div style={{ fontWeight: 600, fontSize: "0.88rem" }}><ClientLink name={appt.clientName} clientId={appt.clientId} /></div>
           <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
             {fmtTime(appt.time)} · {appt.serviceName}
           </div>
@@ -508,7 +528,7 @@ function FollowUpGroup({
             display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
           }}>
             <div>
-              <div style={{ fontWeight: 600, fontSize: "0.83rem" }}>{item.clientName}</div>
+              <div style={{ fontWeight: 600, fontSize: "0.83rem" }}><ClientLink name={item.clientName} clientId={item.clientId} /></div>
               <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
                 {item.clientPhone}
               </div>

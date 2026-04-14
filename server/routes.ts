@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
+import Twilio from "twilio";
 
 export async function registerRoutes(httpServer: Server, app: Express) {
   const today = () => new Date().toISOString().slice(0, 10);
@@ -95,6 +96,41 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     const p = await storage.updatePackage(Number(req.params.id), req.body);
     if (!p) return res.status(404).json({ error: "Not found" });
     res.json(p);
+  });
+
+  // ── SMS via Twilio ──────────────────────────────────────────────────────
+  app.post("/api/sms/send", async (req, res) => {
+    try {
+      const { to, message } = req.body;
+      if (!to || !message) return res.status(400).json({ error: "to and message required" });
+
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+      if (!accountSid || !authToken || !fromNumber) {
+        return res.status(500).json({ error: "Twilio not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER in environment." });
+      }
+
+      const client = Twilio(accountSid, authToken);
+      const phone = "+1" + to.replace(/\D/g, "").slice(-10);
+
+      const result = await client.messages.create({
+        body: message,
+        from: fromNumber,
+        to: phone,
+      });
+
+      res.json({ ok: true, sid: result.sid, status: result.status });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Check Twilio config status
+  app.get("/api/sms/status", (_req, res) => {
+    const configured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
+    res.json({ configured });
   });
 
   // Seed (dev only — protected by requireAuth middleware but also env guard)

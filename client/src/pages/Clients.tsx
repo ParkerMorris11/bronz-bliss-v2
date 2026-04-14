@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Client, Appointment, Service } from "../../../shared/schema";
 
@@ -87,8 +88,100 @@ function AddClientModal({ onClose, prefillName }: { onClose: () => void; prefill
   );
 }
 
+// ── SMS Composer ─────────────────────────────────────────────────────────────
+const QUICK_TEMPLATES = [
+  { label: "Prep Reminder", msg: (name: string) => `Hi ${name.split(" ")[0]}! Reminder for your tan tomorrow ☀️ Please exfoliate tonight, no deodorant/lotion day-of, and wear loose dark clothes. See you soon! — Bronz Bliss` },
+  { label: "Rinse Reminder", msg: (name: string) => `Hi ${name.split(" ")[0]}! Time to rinse your tan — rinse with water only (no soap) and pat dry gently. Moisturize after! 💛 — Bronz Bliss` },
+  { label: "Review Request", msg: (name: string) => `Hi ${name.split(" ")[0]}! Thank you for visiting Bronz Bliss! If you loved your tan, we'd appreciate a quick Google review ⭐ — Bronz Bliss` },
+  { label: "Book Again", msg: (name: string) => `Hi ${name.split(" ")[0]}! It's been a while — ready for a fresh glow? Book your next session with us anytime! ☀️ — Bronz Bliss` },
+];
+
+function SmsComposer({ client, onClose }: { client: Client; onClose: () => void }) {
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      apiRequest("POST", "/api/sms/send", { to: client.phone, message }).then(async r => {
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+        return r.json();
+      }),
+    onSuccess: () => { setSent(true); setError(""); },
+    onError: (e: any) => setError(e.message),
+  });
+
+  if (sent) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px 0" }}>
+        <div style={{ fontSize: "1.5rem", marginBottom: 8 }}>✓</div>
+        <div style={{ fontSize: "0.88rem", color: "#76d59c", fontWeight: 600, marginBottom: 14 }}>Text sent to {client.name.split(" ")[0]}</div>
+        <button onClick={onClose} style={{
+          padding: "8px 20px", borderRadius: 10, border: "none",
+          background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)",
+          cursor: "pointer", fontSize: "0.82rem", fontWeight: 600,
+        }}>Done</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Quick templates */}
+      <div style={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "rgba(255,255,255,0.3)", marginBottom: 8 }}>Quick Messages</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+        {QUICK_TEMPLATES.map(t => (
+          <button key={t.label} onClick={() => setMessage(t.msg(client.name))} style={{
+            padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)",
+            background: message === t.msg(client.name) ? `${ACCENT}22` : "rgba(255,255,255,0.04)",
+            color: message === t.msg(client.name) ? ACCENT : "rgba(255,255,255,0.6)",
+            cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, transition: "all 0.15s",
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Message input */}
+      <textarea
+        value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder={`Message to ${client.name.split(" ")[0]}…`}
+        rows={4}
+        style={{
+          width: "100%", padding: "12px 14px", borderRadius: 12, boxSizing: "border-box",
+          background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+          color: "rgba(255,255,255,0.85)", fontSize: "0.85rem", outline: "none", resize: "none",
+          fontFamily: "inherit",
+        }}
+      />
+      <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.25)", marginTop: 4, textAlign: "right" }}>{message.length} chars</div>
+
+      {error && <p style={{ color: "#ff7f8d", fontSize: "0.8rem", margin: "8px 0" }}>{error}</p>}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <button onClick={onClose} style={{
+          flex: 1, padding: "10px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)",
+          background: "transparent", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontWeight: 600, fontSize: "0.84rem",
+        }}>Cancel</button>
+        <button
+          onClick={() => { if (!message.trim()) { setError("Message is empty"); return; } mutation.mutate(); }}
+          disabled={mutation.isPending || !message.trim()}
+          style={{
+            flex: 2, padding: "10px 0", borderRadius: 10, border: "none",
+            background: `linear-gradient(135deg, #4a9eff, #2d7ed9)`,
+            color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem",
+            opacity: mutation.isPending || !message.trim() ? 0.5 : 1,
+          }}>
+          {mutation.isPending ? "Sending…" : "Send Text"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Client Detail Panel ──────────────────────────────────────────────────────
 function ClientDetail({ client, onClose }: { client: Client; onClose: () => void }) {
+  const [showSms, setShowSms] = useState(false);
+
   const { data: appointments } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
     queryFn: () => apiRequest("GET", "/api/appointments").then(r => r.json()),
@@ -140,16 +233,46 @@ function ClientDetail({ client, onClose }: { client: Client; onClose: () => void
         </div>
       </div>
 
-      {/* Contact info */}
+      {/* Contact info with text button */}
       <div style={{
         background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
         borderRadius: 14, padding: "16px 18px", marginBottom: 16,
       }}>
-        <Row label="Phone" value={client.phone || "—"} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 10, marginBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div>
+            <span style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.35)" }}>Phone</span>
+            <div style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.75)", fontWeight: 500, marginTop: 2 }}>{client.phone || "—"}</div>
+          </div>
+          {client.phone && (
+            <button
+              onClick={() => setShowSms(!showSms)}
+              style={{
+                padding: "7px 14px", borderRadius: 10, border: "none",
+                background: showSms ? "rgba(74,158,255,0.15)" : "linear-gradient(135deg, #4a9eff, #2d7ed9)",
+                color: showSms ? "#4a9eff" : "#fff",
+                cursor: "pointer", fontSize: "0.78rem", fontWeight: 700,
+                display: "flex", alignItems: "center", gap: 5,
+                transition: "all 0.15s",
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Text
+            </button>
+          )}
+        </div>
         <Row label="Email" value={client.email || "—"} />
         <Row label="First Visit" value={client.firstVisitDate || "—"} />
         <Row label="Last Visit" value={client.lastVisitDate || "—"} last />
       </div>
+
+      {/* SMS Composer */}
+      {showSms && client.phone && (
+        <div style={{
+          background: "rgba(74,158,255,0.06)", border: "1px solid rgba(74,158,255,0.15)",
+          borderRadius: 14, padding: "16px 18px", marginBottom: 16,
+        }}>
+          <SmsComposer client={client} onClose={() => setShowSms(false)} />
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
@@ -242,11 +365,23 @@ export default function Clients() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Client | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [location] = useLocation();
 
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
     queryFn: () => apiRequest("GET", "/api/clients").then(r => r.json()),
   });
+
+  // Auto-select client from URL param (e.g. /clients?id=42)
+  useEffect(() => {
+    if (!clients?.length) return;
+    const params = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    const id = params.get("id");
+    if (id) {
+      const client = clients.find(c => c.id === Number(id));
+      if (client) setSelected(client);
+    }
+  }, [clients, location]);
 
   const filtered = (clients ?? []).filter(c => {
     const q = search.toLowerCase();
