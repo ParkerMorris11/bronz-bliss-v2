@@ -365,9 +365,18 @@ export const storage = {
       calendarUtilization.push({ date: ds, appointmentCount: dayAppts.length, filledSlots: dayAppts.length, totalSlots: DAILY_SLOTS });
     }
 
+    // Monthly revenue (current calendar month, completed appointments)
+    const monthStart = today.slice(0, 7) + "-01"; // e.g. "2026-04-01"
+    const monthAppts = await many<Appointment>(
+      db.select().from(appointments)
+        .where(and(gte(appointments.date, monthStart), eq(appointments.status, "completed")))
+    );
+    const monthlyRevenue = monthAppts.reduce((s, a) => s + (Number(a.revenue) ?? Number(serviceMap[a.serviceId]?.price) ?? 0), 0);
+
     return {
       todayBookings: { count: todayAppts.length, nextClient, gaps, appointments: todayWithNames },
-      revenue: { bookedToday, completedToday, sevenDayTrend },
+      revenue: { bookedToday, completedToday, sevenDayTrend, monthlyRevenue },
+      totalClients: allClients.length,
       packageLiability,
       clientRetention: { firstTime, activeRepeat, atRisk, dormant },
       followUpQueue: { prepReminders, rinseReminders, reviewRequests },
@@ -385,7 +394,8 @@ export interface DashboardData {
     gaps: { start: string; end: string }[];
     appointments: (Appointment & { clientName: string; serviceName: string; clientWaiver: boolean; clientIntake: boolean })[];
   };
-  revenue: { bookedToday: number; completedToday: number; sevenDayTrend: { date: string; amount: number }[] };
+  revenue: { bookedToday: number; completedToday: number; sevenDayTrend: { date: string; amount: number }[]; monthlyRevenue: number };
+  totalClients: number;
   packageLiability: { totalSessionsOwed: number; activePackages: (Package & { clientName: string; sessionsRemaining: number })[] };
   clientRetention: { firstTime: number; activeRepeat: number; atRisk: number; dormant: number };
   followUpQueue: {
