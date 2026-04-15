@@ -43,6 +43,126 @@ function generateSlots() {
 const ALL_SLOTS = generateSlots();
 const SLOT_HEIGHT = 44;
 
+// ── Client Search Dropdown ────────────────────────────────────────────────────
+function ClientSearch({ clients, value, onChange }: {
+  clients: Client[];
+  value: string; // selected clientId as string
+  onChange: (id: string, name: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const ref = useMemo(() => ({ current: null as HTMLDivElement | null }), []);
+
+  // Close on outside click
+  useState(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  });
+
+  const filtered = query.trim()
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(query.toLowerCase()) ||
+        (c.phone ?? "").includes(query)
+      ).slice(0, 8)
+    : [];
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "10px 14px", borderRadius: 10, boxSizing: "border-box",
+    background: "var(--bg)", border: `1px solid ${open ? ACCENT : "var(--border)"}`,
+    color: "var(--text-primary)", fontSize: "0.88rem", outline: "none",
+    fontFamily: "inherit", transition: "border-color 0.15s",
+  };
+
+  return (
+    <div ref={el => { (ref as any).current = el; }} style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}>
+        <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input
+          value={value ? displayName : query}
+          onChange={e => {
+            if (value) { onChange("", ""); setDisplayName(""); }
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => { if (!value) setOpen(true); }}
+          placeholder="Search by name or phone…"
+          style={{ ...inputStyle, paddingLeft: 36, paddingRight: value ? 36 : 14 }}
+        />
+        {value && (
+          <button
+            onClick={() => { onChange("", ""); setDisplayName(""); setQuery(""); setOpen(false); }}
+            style={{
+              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: 1, padding: 2,
+            }}
+          >×</button>
+        )}
+      </div>
+
+      {open && filtered.length > 0 && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+          background: "#fff", border: "1px solid var(--border)",
+          borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+          zIndex: 400, overflow: "hidden",
+        }}>
+          {filtered.map((c, i) => (
+            <button
+              key={c.id}
+              onMouseDown={e => {
+                e.preventDefault();
+                onChange(String(c.id), c.name);
+                setDisplayName(c.name);
+                setQuery("");
+                setOpen(false);
+              }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", padding: "10px 14px", border: "none",
+                background: "transparent", cursor: "pointer", textAlign: "left",
+                borderBottom: i < filtered.length - 1 ? "1px solid var(--border-light)" : "none",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-hover)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+            >
+              <div style={{
+                width: 30, height: 30, borderRadius: 999, flexShrink: 0,
+                background: "var(--amber-light)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "0.72rem", fontWeight: 700, color: ACCENT,
+              }}>
+                {c.name.split(" ").map((n: string) => n[0]).join("").slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)" }}>{c.name}</div>
+                {c.phone && <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 1 }}>{c.phone}</div>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {open && query.trim() && filtered.length === 0 && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+          background: "#fff", border: "1px solid var(--border)",
+          borderRadius: 12, padding: "14px", zIndex: 400,
+          fontSize: "0.82rem", color: "var(--text-muted)", textAlign: "center",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
+        }}>
+          No clients found for "{query}"
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── New Appointment Modal ─────────────────────────────────────────────────────
 function NewApptModal({ date, time, onClose }: { date: string; time: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -102,32 +222,37 @@ function NewApptModal({ date, time, onClose }: { date: string; time: string; onC
           <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.4rem", lineHeight: 1 }}>×</button>
         </div>
 
-        {[
-          { label: "Client", el: (
-            <select value={clientId} onChange={e => setClientId(e.target.value)} style={inputStyle}>
-              <option value="">Select client…</option>
-              {(clients ?? []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          )},
-          { label: "Service", el: (
-            <select value={serviceId} onChange={e => setServiceId(e.target.value)} style={inputStyle}>
-              <option value="">Select service…</option>
-              {(services ?? []).map(s => <option key={s.id} value={s.id}>{s.name} ({s.durationMinutes}min · ${s.price})</option>)}
-            </select>
-          )},
-          { label: "Time", el: (
-            <input type="time" value={apptTime} onChange={e => setApptTime(e.target.value)} style={inputStyle} />
-          )},
-          { label: "Notes", el: (
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
-              style={{ ...inputStyle, resize: "none" }} placeholder="Optional notes…" />
-          )},
-        ].map(({ label, el }) => (
-          <div key={label} style={{ marginBottom: 14 }}>
-            <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }}>{label}</label>
-            {el}
-          </div>
-        ))}
+        {/* Client search */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }}>Client</label>
+          <ClientSearch
+            clients={clients ?? []}
+            value={clientId}
+            onChange={(id, _name) => setClientId(id)}
+          />
+        </div>
+
+        {/* Service */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }}>Service</label>
+          <select value={serviceId} onChange={e => setServiceId(e.target.value)} style={inputStyle}>
+            <option value="">Select service…</option>
+            {(services ?? []).map(s => <option key={s.id} value={s.id}>{s.name} ({s.durationMinutes}min · ${s.price})</option>)}
+          </select>
+        </div>
+
+        {/* Time */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }}>Time</label>
+          <input type="time" value={apptTime} onChange={e => setApptTime(e.target.value)} style={inputStyle} />
+        </div>
+
+        {/* Notes */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }}>Notes</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+            style={{ ...inputStyle, resize: "none" }} placeholder="Optional notes…" />
+        </div>
 
         {error && <p style={{ color: "#dc2626", fontSize: "0.8rem", margin: "8px 0" }}>{error}</p>}
 
