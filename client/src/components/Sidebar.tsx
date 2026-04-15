@@ -14,7 +14,7 @@ const NAV = [
   {
     section: "MAIN",
     items: [
-      { href: "/", label: "Dashboard", icon: <GridIcon />, sub: ["Activity", "Statistic", "Performance"] },
+      { href: "/", label: "Dashboard", icon: <GridIcon /> },
       { href: "/calendar", label: "Calendar", icon: <CalendarIcon /> },
       { href: "/clients", label: "Clients", icon: <UsersIcon /> },
     ],
