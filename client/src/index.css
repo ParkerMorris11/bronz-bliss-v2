@@ -1,181 +1,172 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@layer base {
-  :root {
-    /* ── Bronz Bliss palette: deep warm-black surfaces, golden amber accent ── */
-    --background: 30 8% 7%;
-    --foreground: 38 18% 90%;
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+:root {
+  --bg:          #faf7f2;
+  --bg-sidebar:  #ffffff;
+  --bg-card:     #ffffff;
+  --bg-hover:    #f5f0e8;
+  --bg-input:    #f5f0e8;
 
-    --card: 30 8% 10%;
-    --card-foreground: 38 18% 90%;
+  --amber:       #e8943a;
+  --amber-light: #fdf0e0;
+  --amber-mid:   #f5d4a8;
 
-    --popover: 30 8% 10%;
-    --popover-foreground: 38 18% 90%;
+  --text-primary:   #1c1917;
+  --text-secondary: #78716c;
+  --text-muted:     #a8a29e;
 
-    --primary: 36 72% 62%;        /* warm amber #e7b56f */
-    --primary-foreground: 30 8% 8%;
+  --border:      #e8e0d5;
+  --border-light:#f0ebe3;
 
-    --secondary: 30 8% 14%;
-    --secondary-foreground: 38 10% 72%;
+  --success:     #16a34a;
+  --success-bg:  #dcfce7;
+  --warning:     #d97706;
+  --warning-bg:  #fef3c7;
+  --danger:      #dc2626;
+  --danger-bg:   #fee2e2;
+  --blue:        #2563eb;
+  --blue-bg:     #dbeafe;
 
-    --muted: 30 8% 14%;
-    --muted-foreground: 38 8% 52%;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
 
-    --accent: 36 72% 62%;
-    --accent-foreground: 30 8% 8%;
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
 
-    --destructive: 0 62% 58%;
-    --destructive-foreground: 38 18% 90%;
-
-    --border: 30 8% 16%;
-    --input: 30 8% 16%;
-    --ring: 36 72% 62%;
-
-    --radius: 0.75rem;
-
-    /* ── Brand-specific tokens ── */
-    --amber: #e7b56f;
-    --amber-soft: rgba(231,181,111,0.14);
-    --amber-glow: rgba(231,181,111,0.08);
-    --surface-glass: rgba(255,255,255,0.045);
-    --surface-glass-2: rgba(255,255,255,0.075);
-    --border-glass: rgba(255,255,255,0.1);
-    --success: #76d59c;
-    --success-bg: rgba(118,213,156,0.12);
-    --warning: #ffb86b;
-    --warning-bg: rgba(255,184,107,0.12);
-    --danger: #ff7f8d;
-    --danger-bg: rgba(255,127,141,0.12);
-    --info: #7ec8e3;
-    --info-bg: rgba(126,200,227,0.12);
-  }
-
-  /* Dark mode (this app is dark-first) */
-  .dark {
-    --background: 30 8% 7%;
-    --foreground: 38 18% 90%;
-    --card: 30 8% 10%;
-    --card-foreground: 38 18% 90%;
-    --popover: 30 8% 10%;
-    --popover-foreground: 38 18% 90%;
-    --primary: 36 72% 62%;
-    --primary-foreground: 30 8% 8%;
-    --secondary: 30 8% 14%;
-    --secondary-foreground: 38 10% 72%;
-    --muted: 30 8% 14%;
-    --muted-foreground: 38 8% 52%;
-    --accent: 36 72% 62%;
-    --accent-foreground: 30 8% 8%;
-    --destructive: 0 62% 58%;
-    --destructive-foreground: 38 18% 90%;
-    --border: 30 8% 16%;
-    --input: 30 8% 16%;
-    --ring: 36 72% 62%;
-  }
-
-  * {
-    @apply border-border;
-    box-sizing: border-box;
-  }
-
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    margin: 0;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
-
-  #root {
-    height: 100%;
-  }
+  --sidebar-w:   240px;
+  --topbar-h:    60px;
 }
 
-/* ── Dashboard layout ── */
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 .dashboard-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  grid-template-rows: 1fr;
+  display: flex;
   height: 100dvh;
-  background: radial-gradient(circle at 10% 10%, rgba(231,181,111,0.07), transparent 35%),
-              radial-gradient(circle at 90% 80%, rgba(231,181,111,0.04), transparent 30%),
-              hsl(var(--background));
+  overflow: hidden;
+  background: var(--bg);
 }
 
 .sidebar {
-  grid-row: 1 / -1;
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
   overflow-y: auto;
-  overscroll-behavior: contain;
-  border-right: 1px solid var(--border-glass);
-  background: rgba(255,255,255,0.025);
-  backdrop-filter: blur(24px);
+  flex-shrink: 0;
 }
 
 .main-area {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* ── Glass card ── */
-.glass-card {
-  background: linear-gradient(180deg, var(--surface-glass-2), var(--surface-glass));
-  border: 1px solid var(--border-glass);
-  border-radius: 1.25rem;
-  backdrop-filter: blur(20px);
-}
-
-/* ── Status badges ── */
-.badge-success { background: var(--success-bg); color: var(--success); }
-.badge-warning { background: var(--warning-bg); color: var(--warning); }
-.badge-danger  { background: var(--danger-bg);  color: var(--danger); }
-.badge-info    { background: var(--info-bg);     color: var(--info); }
-.badge-amber   { background: var(--amber-soft);  color: var(--amber); }
-.badge-muted   { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); }
-
-/* ── Mobile responsive ── */
-@media (max-width: 768px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-  }
-
-  /* Hide sidebar, show bottom nav */
-  .sidebar { display: none !important; }
-  .bottom-nav { display: block !important; }
-
-  /* Add bottom padding so content isn't hidden behind bottom nav */
-  .main-area {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
-
-/* ── Tabular numbers ── */
-.tabular { font-variant-numeric: tabular-nums lining-nums; }
-
-/* ── Sparkline bar ── */
-.spark-bar {
   flex: 1;
-  border-radius: 4px 4px 0 0;
-  min-height: 4px;
-  transition: height 0.4s ease;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* ── Animated value ── */
-@keyframes countUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Typography helpers ──────────────────────────────────────────────────── */
+.label-xs {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
-.count-anim { animation: countUp 0.5s ease forwards; }
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+}
+
+/* ── Badge ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid;
+}
+.badge-success { color: var(--success); border-color: var(--success); background: transparent; }
+.badge-warning { color: var(--warning); border-color: var(--warning); background: transparent; }
+.badge-danger  { color: var(--danger);  border-color: var(--danger);  background: transparent; }
+.badge-blue    { color: var(--blue);    border-color: var(--blue);    background: transparent; }
+.badge-filled-amber { color: #fff; background: var(--amber); border-color: var(--amber); }
+
+/* ── Button ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--radius-md); border: none;
+  background: var(--amber); color: #fff; font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ── Input ───────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%; padding: 9px 14px; border-radius: var(--radius-md);
+  border: 1.5px solid var(--border); background: var(--bg-input);
+  color: var(--text-primary); font-size: 13.5px; outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--amber); }
+.input::placeholder { color: var(--text-muted); }
+
+/* ── Mobile bottom nav ───────────────────────────────────────────────────── */
+.bottom-nav { display: none; }
+
+@media (max-width: 768px) {
+  .sidebar { display: none !important; }
+  .bottom-nav {
+    display: flex !important;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .main-area { padding-bottom: 64px; }
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }

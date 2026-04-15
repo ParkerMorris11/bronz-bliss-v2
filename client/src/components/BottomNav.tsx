@@ -56,11 +56,12 @@ export default function BottomNav() {
       style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0,
-        background: "rgba(10,10,11,0.94)",
-        borderTop: "1px solid rgba(255,255,255,0.09)",
-        backdropFilter: "blur(24px)",
+        background: "rgba(255,255,255,0.96)",
+        borderTop: "1px solid var(--border)",
+        backdropFilter: "blur(20px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
         zIndex: 100,
+        boxShadow: "0 -4px 16px rgba(0,0,0,0.06)",
       }}
       className="bottom-nav"
     >
@@ -79,7 +80,7 @@ export default function BottomNav() {
                   alignItems: "center", justifyContent: "center", gap: 4,
                   padding: "10px 4px 12px",
                   background: "transparent", border: "none",
-                  color: "rgba(255,127,141,0.7)", cursor: "pointer",
+                  color: "#dc2626", cursor: "pointer",
                   fontSize: "0.65rem", fontWeight: 500,
                 }}
               >
@@ -98,8 +99,9 @@ export default function BottomNav() {
                   alignItems: "center", justifyContent: "center", gap: 4,
                   padding: "10px 4px 12px", width: "100%",
                   background: "transparent", border: "none",
-                  color: isActive ? "rgba(231,181,111,0.95)" : "rgba(255,255,255,0.4)",
-                  cursor: "pointer", fontSize: "0.65rem", fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "var(--amber)" : "var(--text-muted)",
+                  cursor: "pointer", fontSize: "0.65rem",
+                  fontWeight: isActive ? 700 : 500,
                   transition: "color 0.18s ease",
                 }}
               >
@@ -107,10 +109,10 @@ export default function BottomNav() {
                   {tab.icon}
                   {isActive && (
                     <span style={{
-                      position: "absolute", bottom: -6, left: "50%",
+                      position: "absolute", bottom: -5, left: "50%",
                       transform: "translateX(-50%)",
                       width: 4, height: 4, borderRadius: 999,
-                      background: "var(--amber, #e7b56f)",
+                      background: "var(--amber)",
                     }} />
                   )}
                 </span>

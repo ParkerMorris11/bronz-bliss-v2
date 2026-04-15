@@ -9,116 +9,78 @@ export default function Login() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    const result = await login(password);
-    setLoading(false);
-    if (!result.ok) setError(result.error ?? "Incorrect password");
+    setLoading(true); setError("");
+    const ok = await login(password);
+    if (!ok) { setError("Incorrect password — try again"); setLoading(false); }
   }
 
   return (
     <div style={{
-      minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "radial-gradient(circle at 20% 20%, rgba(231,181,111,0.08), transparent 40%), hsl(30 8% 7%)",
-      padding: "20px",
+      minHeight: "100dvh", display: "flex",
+      background: "linear-gradient(135deg, #fdf6ec 0%, #fcebd6 50%, #f5dfc0 100%)",
+      alignItems: "center", justifyContent: "center", padding: 24,
     }}>
+      {/* Decorative blobs */}
+      <div style={{ position: "fixed", top: -80, right: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(232,148,58,0.12)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: -60, left: -60, width: 260, height: 260, borderRadius: "50%", background: "rgba(245,166,35,0.08)", pointerEvents: "none" }} />
+
       <div style={{
-        width: "100%", maxWidth: 380,
-        background: "rgba(255,255,255,0.045)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 24, padding: "36px 32px",
-        backdropFilter: "blur(24px)",
+        background: "#fff", borderRadius: 24, padding: "40px 36px",
+        width: "100%", maxWidth: 400,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.06)",
+        position: "relative", zIndex: 1,
       }}>
         {/* Logo */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 18, marginBottom: 14,
-            background: "linear-gradient(135deg, rgba(231,181,111,0.9), rgba(231,181,111,0.3))",
-            boxShadow: "0 12px 28px rgba(231,181,111,0.22)",
+            width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
+            background: "linear-gradient(135deg, #f5a623, #e8943a)",
             display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 8px 24px rgba(232,148,58,0.35)",
           }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-label="Bronz Bliss">
-              <circle cx="12" cy="9" r="4" fill="hsl(30,8%,8%)" opacity="0.9"/>
-              <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="hsl(30,8%,8%)" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
-              <path d="M12 2L12 4M18 5L16.5 6.5M20 11L18 11M18 17L16.5 15.5M12 20L12 22M5.5 15.5L4 17M4 11L6 11M5.5 6.5L7 5"
-                stroke="rgba(231,181,111,0.7)" strokeWidth="1.5" strokeLinecap="round"/>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="9" r="4" fill="white" opacity="0.95"/>
+              <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
-          <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "rgba(255,255,255,0.95)", letterSpacing: "-0.02em" }}>
-            Bronz Bliss
-          </div>
-          <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
-            Studio Manager
-          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1c1917", margin: 0 }}>Bronz Bliss</h1>
+          <p style={{ fontSize: 13, color: "#78716c", marginTop: 4 }}>Studio Manager · Cedar City, UT</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{
-              display: "block", fontSize: "0.78rem", fontWeight: 600,
-              color: "rgba(255,255,255,0.5)", marginBottom: 8, letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}>
+            <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "#78716c", marginBottom: 8 }}>
               Password
             </label>
             <input
-              data-testid="input-password"
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); setError(""); }}
               placeholder="Enter your password"
               autoFocus
               style={{
-                width: "100%", padding: "14px 16px",
-                background: "rgba(255,255,255,0.06)",
-                border: error ? "1px solid rgba(255,127,141,0.5)" : "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 14, color: "rgba(255,255,255,0.92)",
-                fontSize: "0.95rem", outline: "none",
-                transition: "border-color 0.18s ease",
+                width: "100%", padding: "11px 14px", borderRadius: 12,
+                border: `1.5px solid ${error ? "#dc2626" : "#e8e0d5"}`,
+                background: "#faf7f2", color: "#1c1917", fontSize: 14,
+                outline: "none", transition: "border-color 0.15s", fontFamily: "inherit",
               }}
-              onFocus={e => { if (!error) e.target.style.borderColor = "rgba(231,181,111,0.5)"; }}
-              onBlur={e => { if (!error) e.target.style.borderColor = "rgba(255,255,255,0.12)"; }}
+              onFocus={e => { if (!error) e.target.style.borderColor = "#e8943a"; }}
+              onBlur={e => { if (!error) e.target.style.borderColor = "#e8e0d5"; }}
             />
+            {error && <p style={{ color: "#dc2626", fontSize: 12.5, marginTop: 7, marginBottom: 0 }}>{error}</p>}
           </div>
 
-          {error && (
-            <div style={{
-              fontSize: "0.8rem", color: "var(--danger, #ff7f8d)",
-              marginBottom: 14, textAlign: "center",
-            }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            data-testid="button-login"
-            type="submit"
-            disabled={loading || !password}
-            style={{
-              width: "100%", padding: "14px",
-              background: loading || !password
-                ? "rgba(231,181,111,0.25)"
-                : "linear-gradient(180deg, rgba(231,181,111,0.9), rgba(231,181,111,0.65))",
-              border: "none", borderRadius: 14,
-              color: loading || !password ? "rgba(255,255,255,0.4)" : "hsl(30,8%,10%)",
-              fontWeight: 700, fontSize: "0.95rem",
-              cursor: loading || !password ? "not-allowed" : "pointer",
-              transition: "all 0.18s ease",
-            }}
-          >
+          <button type="submit" disabled={loading || !password} style={{
+            width: "100%", padding: "12px 0", borderRadius: 12, border: "none",
+            background: "linear-gradient(135deg, #f5a623, #e8943a)",
+            color: "#fff", fontWeight: 700, fontSize: 14.5, cursor: loading ? "wait" : "pointer",
+            opacity: !password || loading ? 0.6 : 1,
+            boxShadow: "0 4px 16px rgba(232,148,58,0.3)",
+            transition: "opacity 0.15s", fontFamily: "inherit",
+          }}>
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
-
-        <div style={{
-          marginTop: 24, paddingTop: 20,
-          borderTop: "1px solid rgba(255,255,255,0.06)",
-          textAlign: "center", fontSize: "0.72rem",
-          color: "rgba(255,255,255,0.25)",
-        }}>
-          Bronz Bliss · Cedar City, UT
-        </div>
       </div>
     </div>
   );
