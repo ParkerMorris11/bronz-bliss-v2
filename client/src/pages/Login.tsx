@@ -32,18 +32,14 @@ export default function Login() {
       }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
-            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 24px rgba(107,63,42,0.35)",
-          }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="9" r="4" fill="white" opacity="0.95"/>
-              <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+            <svg width="160" height="50" viewBox="0 0 200 62" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Bronz Bliss">
+              <circle cx="22" cy="31" r="20" fill="#e8d5bd" opacity="0.85"/>
+              <circle cx="37" cy="31" r="20" fill="#b8895a" opacity="0.80"/>
+              <circle cx="52" cy="31" r="20" fill="#6B3F2A" opacity="0.90"/>
+              <text x="82" y="38" fontFamily="'Cormorant Garamond', Georgia, serif" fontSize="28" fontWeight="500" letterSpacing="3" fill="#6B3F2A">Bronz</text>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1c1917", margin: 0 }}>Bronz Bliss</h1>
           <p style={{ fontSize: 13, color: "#78716c", marginTop: 4 }}>Studio Manager · Cedar City, UT</p>
         </div>
 

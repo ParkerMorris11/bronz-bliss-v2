@@ -36,25 +36,14 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div style={{ padding: "20px 20px 16px", borderBottom: `1px solid ${C.borderLight}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(107,63,42,0.3)",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="9" r="4" fill="white" opacity="0.95"/>
-              <path d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M12 2L12 3.5M17.5 4.5L16.4 5.6M20 10.5L18.5 10.5M17.5 16.5L16.4 15.4M6.5 4.5L7.6 5.6M4 10.5L5.5 10.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>Bronz Bliss</div>
-            <div style={{ fontSize: 11, color: C.faint, marginTop: 1 }}>Studio Manager</div>
-          </div>
-        </div>
+      <div style={{ padding: "16px 16px 14px", borderBottom: `1px solid ${C.borderLight}` }}>
+        <svg width="118" height="34" viewBox="0 0 200 62" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Bronz Bliss">
+          <circle cx="22" cy="31" r="20" fill="#e8d5bd" opacity="0.85"/>
+          <circle cx="37" cy="31" r="20" fill="#b8895a" opacity="0.80"/>
+          <circle cx="52" cy="31" r="20" fill="#6B3F2A" opacity="0.90"/>
+          <text x="82" y="38" fontFamily="'Cormorant Garamond', Georgia, serif" fontSize="28" fontWeight="500" letterSpacing="3" fill="#6B3F2A">Bronz</text>
+        </svg>
+        <div style={{ fontSize: 11, color: C.faint, marginTop: 4, paddingLeft: 2 }}>Studio Manager</div>
       </div>
 
       {/* Search */}
