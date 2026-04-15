@@ -228,9 +228,9 @@ function NewApptModal({ date, time, onClose }: { date: string; time: string; onC
       }).then(r => { if (!r.ok) throw new Error("Failed to save"); return r.json(); });
     },
     onSuccess: () => {
-      // Invalidate all appointment queries so the calendar refreshes immediately
-      qc.invalidateQueries({ queryKey: ["/api/appointments"] });
-      qc.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      // refetchQueries forces an immediate fetch regardless of staleTime: Infinity
+      qc.refetchQueries({ queryKey: ["/api/appointments"] });
+      qc.refetchQueries({ queryKey: ["/api/dashboard"] });
       setConfirmed({ total, serviceNames: selectedServices.map(s => s.name) });
     },
     onError: (e: any) => setError(e.message),
