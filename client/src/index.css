@@ -8,9 +8,9 @@
   --bg-hover:    #f5f0e8;
   --bg-input:    #f5f0e8;
 
-  --amber:       #e8943a;
-  --amber-light: #fdf0e0;
-  --amber-mid:   #f5d4a8;
+  --amber:       #6B3F2A;
+  --amber-light: #f3ebe4;
+  --amber-mid:   #d4bfaf;
 
   --text-primary:   #1c1917;
   --text-secondary: #78716c;
@@ -122,6 +122,7 @@ input, textarea, select { font-family: inherit; }
 .badge-danger  { color: var(--danger);  border-color: var(--danger);  background: transparent; }
 .badge-blue    { color: var(--blue);    border-color: var(--blue);    background: transparent; }
 .badge-filled-amber { color: #fff; background: var(--amber); border-color: var(--amber); }
+.badge-amber { color: var(--amber); border-color: var(--amber); background: var(--amber-light); }
 
 /* ── Button ──────────────────────────────────────────────────────────────── */
 .btn-primary {

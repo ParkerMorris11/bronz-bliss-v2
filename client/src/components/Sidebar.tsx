@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth";
 
 const C = {
   bg: "#faf7f2", card: "#ffffff", hover: "#f5f0e8",
-  amber: "#e8943a", amberLight: "#fdf0e0",
+  amber: "#6B3F2A", amberLight: "#f3ebe4",
   text: "#1c1917", muted: "#78716c", faint: "#a8a29e",
   border: "#e8e0d5", borderLight: "#f0ebe3",
   danger: "#dc2626",
@@ -40,9 +40,9 @@ export default function Sidebar() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-            background: "linear-gradient(135deg, #f5a623, #e8943a)",
+            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 12px rgba(232,148,58,0.3)",
+            boxShadow: "0 4px 12px rgba(107,63,42,0.3)",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="9" r="4" fill="white" opacity="0.95"/>
@@ -132,7 +132,7 @@ export default function Sidebar() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 34, height: 34, borderRadius: 99, flexShrink: 0,
-            background: "linear-gradient(135deg, #f5a623, #e8943a)",
+            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontWeight: 700, fontSize: 12, color: "#fff",
           }}>IZ</div>

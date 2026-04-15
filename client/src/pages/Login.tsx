@@ -21,8 +21,8 @@ export default function Login() {
       alignItems: "center", justifyContent: "center", padding: 24,
     }}>
       {/* Decorative blobs */}
-      <div style={{ position: "fixed", top: -80, right: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(232,148,58,0.12)", pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: -60, left: -60, width: 260, height: 260, borderRadius: "50%", background: "rgba(245,166,35,0.08)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", top: -80, right: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(107,63,42,0.1)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: -60, left: -60, width: 260, height: 260, borderRadius: "50%", background: "rgba(139,94,60,0.07)", pointerEvents: "none" }} />
 
       <div style={{
         background: "#fff", borderRadius: 24, padding: "40px 36px",
@@ -34,9 +34,9 @@ export default function Login() {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
-            background: "linear-gradient(135deg, #f5a623, #e8943a)",
+            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 24px rgba(232,148,58,0.35)",
+            boxShadow: "0 8px 24px rgba(107,63,42,0.35)",
           }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="9" r="4" fill="white" opacity="0.95"/>
@@ -64,7 +64,7 @@ export default function Login() {
                 background: "#faf7f2", color: "#1c1917", fontSize: 14,
                 outline: "none", transition: "border-color 0.15s", fontFamily: "inherit",
               }}
-              onFocus={e => { if (!error) e.target.style.borderColor = "#e8943a"; }}
+              onFocus={e => { if (!error) e.target.style.borderColor = "#6B3F2A"; }}
               onBlur={e => { if (!error) e.target.style.borderColor = "#e8e0d5"; }}
             />
             {error && <p style={{ color: "#dc2626", fontSize: 12.5, marginTop: 7, marginBottom: 0 }}>{error}</p>}
@@ -72,10 +72,10 @@ export default function Login() {
 
           <button type="submit" disabled={loading || !password} style={{
             width: "100%", padding: "12px 0", borderRadius: 12, border: "none",
-            background: "linear-gradient(135deg, #f5a623, #e8943a)",
+            background: "linear-gradient(135deg, #8B5E3C, #6B3F2A)",
             color: "#fff", fontWeight: 700, fontSize: 14.5, cursor: loading ? "wait" : "pointer",
             opacity: !password || loading ? 0.6 : 1,
-            boxShadow: "0 4px 16px rgba(232,148,58,0.3)",
+            boxShadow: "0 4px 16px rgba(107,63,42,0.3)",
             transition: "opacity 0.15s", fontFamily: "inherit",
           }}>
             {loading ? "Signing in…" : "Sign In"}

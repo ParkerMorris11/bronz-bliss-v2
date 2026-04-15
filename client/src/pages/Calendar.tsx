@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Appointment, Client, Service } from "../../../shared/schema";
 
-const ACCENT = "#e8943a";
+const ACCENT = "#6B3F2A";
 const OPEN_HOUR = 9;
 const CLOSE_HOUR = 20;
 const SLOT_MINUTES = 20;
@@ -300,7 +300,7 @@ export default function Calendar() {
                           color: "transparent", fontSize: "0.72rem",
                         }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = "rgba(232,148,58,0.08)";
+                          (e.currentTarget as HTMLElement).style.background = "rgba(107,63,42,0.07)";
                           (e.currentTarget as HTMLElement).style.color = ACCENT;
                           (e.currentTarget as HTMLElement).textContent = "+ Book";
                         }}

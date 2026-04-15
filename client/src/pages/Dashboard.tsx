@@ -14,11 +14,11 @@ function ClientLink({ name, clientId }: { name: string; clientId?: number }) {
         background: "none", border: "none", padding: 0, margin: 0,
         color: "inherit", fontWeight: "inherit", fontSize: "inherit",
         cursor: "pointer", textDecoration: "none",
-        borderBottom: "1px dashed rgba(232,148,58,0.4)",
+        borderBottom: "1px dashed rgba(107,63,42,0.35)",
         transition: "border-color 0.15s",
       }}
-      onMouseEnter={e => (e.currentTarget.style.borderBottomColor = "rgba(232,148,58,0.9)")}
-      onMouseLeave={e => (e.currentTarget.style.borderBottomColor = "rgba(232,148,58,0.4)")}
+      onMouseEnter={e => (e.currentTarget.style.borderBottomColor = "rgba(107,63,42,0.85)")}
+      onMouseLeave={e => (e.currentTarget.style.borderBottomColor = "rgba(107,63,42,0.35)")}
     >{name}</button>
   );
 }
@@ -100,7 +100,7 @@ export default function Dashboard() {
               <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
           }
-          iconColor="#e8943a"
+          iconColor="#6B3F2A"
           iconBg="var(--amber-light)"
           label="Today's Appointments"
           value={String(todayBookings.count)}
@@ -176,7 +176,7 @@ export default function Dashboard() {
           <div style={{
             margin: "0 20px 16px",
             padding: "14px 18px", borderRadius: 14,
-            background: "var(--amber-light)", border: "1px solid rgba(232,148,58,0.22)",
+            background: "var(--amber-light)", border: "1px solid rgba(107,63,42,0.2)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div>
@@ -192,7 +192,7 @@ export default function Dashboard() {
             </div>
             <div style={{
               width: 44, height: 44, borderRadius: 999, flexShrink: 0,
-              background: "rgba(232,148,58,0.15)", border: "2px solid rgba(232,148,58,0.3)",
+              background: "rgba(107,63,42,0.12)", border: "2px solid rgba(107,63,42,0.25)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "1rem", fontWeight: 700, color: "var(--amber)",
             }}>

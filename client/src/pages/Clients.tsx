@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { Client, Appointment, Service } from "../../../shared/schema";
 
-const ACCENT = "#e8943a";
+const ACCENT = "#6B3F2A";
 
 const statusMeta: Record<string, { color: string; bg: string; border: string; label: string }> = {
   active:  { color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", label: "Active" },
@@ -260,7 +260,7 @@ function ClientDetail({ client, onClose }: { client: Client; onClose: () => void
       {/* SMS Composer */}
       {showSms && client.phone && (
         <div style={{
-          background: "var(--amber-light)", border: `1px solid rgba(232,148,58,0.25)`,
+          background: "var(--amber-light)", border: `1px solid rgba(107,63,42,0.2)`,
           borderRadius: 14, padding: "16px 18px", marginBottom: 14,
         }}>
           <SmsComposer client={client} onClose={() => setShowSms(false)} />
@@ -335,7 +335,7 @@ function DetailSection({ title, children }: { title: string; children: React.Rea
 function ApptRow({ appt, service }: { appt: Appointment; service?: Service }) {
   const color = appt.status === "completed" ? "#16a34a" : appt.status === "cancelled" ? "#dc2626" : ACCENT;
   const bg    = appt.status === "completed" ? "#f0fdf4" : appt.status === "cancelled" ? "#fef2f2" : "var(--amber-light)";
-  const border= appt.status === "completed" ? "#bbf7d0" : appt.status === "cancelled" ? "#fecaca" : "rgba(232,148,58,0.3)";
+  const border= appt.status === "completed" ? "#bbf7d0" : appt.status === "cancelled" ? "#fecaca" : "rgba(107,63,42,0.25)";
   return (
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -383,8 +383,8 @@ export default function Clients() {
   return (
     <div style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "var(--bg)" }}>
       <style>{`
-        .client-card:hover { background: var(--bg-hover) !important; border-color: rgba(232,148,58,0.3) !important; }
-        .client-card.selected { background: var(--amber-light) !important; border-color: rgba(232,148,58,0.4) !important; }
+        .client-card:hover { background: var(--bg-hover) !important; border-color: rgba(107,63,42,0.25) !important; }
+        .client-card.selected { background: var(--amber-light) !important; border-color: rgba(107,63,42,0.35) !important; }
         @media (max-width: 768px) {
           .client-list-pane { display: ${selected ? "none" : "flex"} !important; }
           .client-detail-pane { display: ${selected ? "flex" : "none"} !important; }
@@ -454,7 +454,7 @@ export default function Clients() {
                 >
                   <div style={{
                     width: 40, height: 40, borderRadius: 999, flexShrink: 0,
-                    background: "var(--amber-light)", border: `1.5px solid rgba(232,148,58,0.3)`,
+                    background: "var(--amber-light)", border: `1.5px solid rgba(107,63,42,0.25)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontWeight: 700, fontSize: "0.85rem", color: ACCENT,
                   }}>{initials(c.name)}</div>
