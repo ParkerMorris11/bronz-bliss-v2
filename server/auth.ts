@@ -91,6 +91,8 @@ export function registerAuthRoutes(app: Express) {
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   // Allow auth routes through
   if (req.path.startsWith("/auth")) return next();
+  // Allow public booking routes
+  if (req.path.startsWith("/public")) return next();
   // Allow seed in dev
   if (req.path === "/seed" && process.env.NODE_ENV !== "production") return next();
 

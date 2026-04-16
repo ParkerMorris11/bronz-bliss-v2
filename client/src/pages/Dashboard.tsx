@@ -1,7 +1,9 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useState, useMemo } from "react";
 import type { DashboardData } from "../../../server/storage";
+import type { Appointment, Client, Service } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
 function ClientLink({ name, clientId }: { name: string; clientId?: number }) {
@@ -280,10 +282,248 @@ export default function Dashboard() {
         )}
       </div>
 
+      <div style={{ height: 24 }} />
+
+      {/* ── Month Calendar ── */}
+      <MonthCalendar />
+
       <div style={{ height: 32 }} />
     </div>
   );
 }
+
+// ── Month Calendar ───────────────────────────────────────────────────────────
+function MonthCalendar() {
+  const [, navigate] = useLocation();
+  const [cursor, setCursor] = useState(() => {
+    const d = new Date(); d.setDate(1); return d;
+  });
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const startDow = first.getDay();
+  const daysInMonth = last.getDate();
+  const gridStart = new Date(year, month, 1 - startDow);
+  const cells: Date[] = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    cells.push(d);
+  }
+  const rangeStart = cells[0].toISOString().slice(0, 10);
+  const rangeEnd = cells[cells.length - 1].toISOString().slice(0, 10);
+
+  const { data: appts = [] } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments", "range", rangeStart, rangeEnd],
+    queryFn: () => apiRequest("GET", `/api/appointments?start=${rangeStart}&end=${rangeEnd}`).then(r => r.json()),
+  });
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+    queryFn: () => apiRequest("GET", "/api/clients").then(r => r.json()),
+  });
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ["/api/services"],
+    queryFn: () => apiRequest("GET", "/api/services").then(r => r.json()),
+  });
+
+  const byDate = useMemo(() => {
+    const m = new Map<string, Appointment[]>();
+    for (const a of appts) {
+      if (!m.has(a.date)) m.set(a.date, []);
+      m.get(a.date)!.push(a);
+    }
+    for (const list of m.values()) list.sort((a, b) => a.time.localeCompare(b.time));
+    return m;
+  }, [appts]);
+
+  const clientById = useMemo(() => new Map(clients.map(c => [c.id, c])), [clients]);
+  const serviceById = useMemo(() => new Map(services.map(s => [s.id, s])), [services]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const selectedAppts = selected ? (byDate.get(selected) ?? []) : [];
+
+  const SERVICE_COLOR: Record<string, string> = {
+    spray: "#b8895a", bridal: "#ec4899", contour: "#8b5cf6",
+    addon: "#6b7280", express: "#f59e0b", luxury: "#0ea5e9", custom: "#10b981",
+  };
+
+  return (
+    <div style={{
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: 20,
+      boxShadow: "var(--shadow-md)",
+      overflow: "hidden",
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "20px 24px 16px", borderBottom: "1px solid var(--border)",
+      }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            {first.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+          </h2>
+          <p style={{ margin: "3px 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            {appts.length} appointment{appts.length === 1 ? "" : "s"} this view
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={() => setCursor(new Date(year, month - 1, 1))} style={navBtn}>‹</button>
+          <button onClick={() => { const d = new Date(); d.setDate(1); setCursor(d); setSelected(null); }} style={{ ...navBtn, width: "auto", padding: "0 12px", fontSize: "0.75rem" }}>Today</button>
+          <button onClick={() => setCursor(new Date(year, month + 1, 1))} style={navBtn}>›</button>
+        </div>
+      </div>
+
+      <div style={{ padding: "0 12px 12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, padding: "12px 4px 6px" }}>
+          {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+            <div key={d} style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center" }}>{d}</div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+          {cells.map((d, i) => {
+            const key = d.toISOString().slice(0, 10);
+            const inMonth = d.getMonth() === month;
+            const isToday = key === today;
+            const isSelected = key === selected;
+            const dayAppts = byDate.get(key) ?? [];
+            const count = dayAppts.length;
+            return (
+              <button
+                key={i}
+                onClick={() => setSelected(isSelected ? null : key)}
+                style={{
+                  minHeight: 72,
+                  padding: "6px 6px 4px",
+                  background: isSelected ? "var(--amber-light)" : "var(--bg-card)",
+                  border: isSelected ? "2px solid var(--amber)" : isToday ? "1px solid var(--amber)" : "1px solid var(--border)",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  opacity: inMonth ? 1 : 0.4,
+                  display: "flex", flexDirection: "column", alignItems: "flex-start",
+                  gap: 4,
+                  transition: "background 0.12s",
+                  fontFamily: "inherit",
+                }}
+                onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+                onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = "var(--bg-card)"; }}
+              >
+                <div style={{
+                  fontSize: "0.78rem",
+                  fontWeight: isToday ? 700 : 500,
+                  color: isToday ? "var(--amber)" : "var(--text-primary)",
+                }}>
+                  {d.getDate()}
+                </div>
+                {count > 0 && (
+                  <>
+                    <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                      {dayAppts.slice(0, 4).map(a => {
+                        const svc = serviceById.get(a.serviceId);
+                        const color = SERVICE_COLOR[svc?.type ?? "custom"] ?? "#6b7280";
+                        return (
+                          <span key={a.id} style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block" }} />
+                        );
+                      })}
+                      {count > 4 && (
+                        <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", lineHeight: 1 }}>+{count - 4}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                      {count} booked
+                    </div>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, padding: "14px 8px 4px", fontSize: "0.7rem", color: "var(--text-muted)" }}>
+          {Object.entries({ spray: "Spray", bridal: "Bridal", contour: "Contour", addon: "Add-on" }).map(([k, label]) => (
+            <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: SERVICE_COLOR[k] }} /> {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Selected day detail */}
+      {selected && (
+        <div style={{
+          borderTop: "1px solid var(--border)",
+          padding: "16px 24px 20px",
+          background: "var(--bg)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+            <h3 style={{ margin: 0, fontSize: "0.9rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              {new Date(selected + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </h3>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              {selectedAppts.length} appointment{selectedAppts.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {selectedAppts.length === 0 ? (
+            <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", padding: "12px 0" }}>
+              No appointments this day.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {selectedAppts.map(a => {
+                const c = clientById.get(a.clientId);
+                const svc = serviceById.get(a.serviceId);
+                const color = SERVICE_COLOR[svc?.type ?? "custom"] ?? "#6b7280";
+                return (
+                  <div key={a.id} style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "10px 12px", borderRadius: 10,
+                    background: "var(--bg-card)", border: "1px solid var(--border)",
+                  }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 999, background: color, flexShrink: 0 }} />
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums", minWidth: 64 }}>
+                      {fmtTime(a.time)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                        {c ? <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/clients?id=${c.id}`); }}
+                          style={{ background: "none", border: "none", padding: 0, color: "inherit", fontWeight: "inherit", fontSize: "inherit", cursor: "pointer", borderBottom: "1px dashed rgba(107,63,42,0.35)" }}
+                        >{c.name}</button> : "Unknown"}
+                      </div>
+                      <div style={{ fontSize: "0.74rem", color: "var(--text-muted)", marginTop: 1 }}>
+                        {svc?.name ?? "Service"}
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: "0.7rem", fontWeight: 600, padding: "3px 10px", borderRadius: 999,
+                      background: a.status === "completed" ? "#f0fdf4" : "#f9fafb",
+                      color: a.status === "completed" ? "#16a34a" : "#6b7280",
+                      border: `1px solid ${a.status === "completed" ? "#bbf7d0" : "#e5e7eb"}`,
+                    }}>
+                      {a.status === "checked_in" ? "Here" : a.status === "completed" ? "Done" : a.status === "no_show" ? "No-show" : a.status === "cancelled" ? "Cancelled" : "Scheduled"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const navBtn: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: 8,
+  background: "var(--bg-card)", border: "1px solid var(--border)",
+  color: "var(--text-primary)", cursor: "pointer", fontSize: "1rem", fontWeight: 600,
+  display: "flex", alignItems: "center", justifyContent: "center",
+  fontFamily: "inherit",
+};
 
 // ── StatCard ─────────────────────────────────────────────────────────────────
 function StatCard({

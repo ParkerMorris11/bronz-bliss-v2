@@ -98,6 +98,10 @@ app.use((req, res, next) => {
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
+    // In dev, mirror prod routing: landing at /, SPA at /admin
+    const path = await import("path");
+    const landingPath = path.resolve(process.cwd(), "client", "public", "landing.html");
+    app.get("/", (_req, res) => res.sendFile(landingPath, { dotfiles: "allow" }));
     const { setupVite } = await import("./vite");
     await setupVite(httpServer, app);
   }

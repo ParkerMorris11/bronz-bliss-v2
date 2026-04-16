@@ -553,10 +553,10 @@
         </div>
 
         <div class="reveal">
-          <a href="/admin#/calendar" target="_blank" class="btn-primary" style="font-size:var(--text-base);padding:var(--space-4) var(--space-10)">
+          <button type="button" data-open-book class="btn-primary" style="font-size:var(--text-base);padding:var(--space-4) var(--space-10);border:none;cursor:pointer">
             Book Appointment
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -862,10 +862,10 @@
       <div class="cta-tag">Bronz Bliss Studio · Cedar City, UT</div>
       <h2 class="cta-h2">Ready for the glow<br>you deserve?</h2>
       <div class="cta-btns">
-        <a href="/admin#/calendar" target="_blank" class="btn-white">
+        <button type="button" data-open-book class="btn-white" style="border:none;cursor:pointer">
           Book Now
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
+        </button>
         <a href="#services" class="btn-outline-white">View Services</a>
       </div>
       <div class="cta-trust">
@@ -905,7 +905,7 @@
       <div>
         <div class="footer-heading">Book</div>
         <div class="footer-links">
-          <a href="/admin#/calendar" target="_blank">Book Appointment</a>
+          <a href="#book" data-open-book>Book Appointment</a>
           <a href="#reviews">Reviews</a>
           <a href="#book">How It Works</a>
         </div>
@@ -999,5 +999,221 @@
   checkAddonsGrid();
   window.addEventListener('resize', checkAddonsGrid, { passive: true });
 </script>
+
+<!-- ── BOOKING MODAL ────────────────────────────────────────────────── -->
+<style>
+  .book-modal-backdrop{position:fixed;inset:0;background:rgba(20,12,6,.55);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;animation:bk-fade .2s ease}
+  .book-modal-backdrop.open{display:flex}
+  @keyframes bk-fade{from{opacity:0}to{opacity:1}}
+  @keyframes bk-slide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .book-modal{background:#fff;border-radius:20px;max-width:480px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 24px 60px rgba(20,12,6,.35);animation:bk-slide .25s ease}
+  .book-modal-head{padding:22px 24px 8px;border-bottom:1px solid #efe6d8;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .book-modal-head h3{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.6rem;font-weight:500;color:#2b1a0e;letter-spacing:-.01em}
+  .book-modal-head p{margin:4px 0 0;font-size:.82rem;color:#8a7a6a}
+  .book-modal-close{background:#f4ece0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;color:#6b3f2a;line-height:1;flex-shrink:0}
+  .book-modal-close:hover{background:#e8dac4}
+  .book-modal-body{padding:18px 24px 24px}
+  .bk-field{margin-bottom:14px}
+  .bk-field label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b3f2a;margin-bottom:6px}
+  .bk-field input,.bk-field select,.bk-field textarea{width:100%;padding:10px 12px;border:1px solid #e2d4bf;border-radius:10px;font-size:.92rem;font-family:inherit;background:#fdfaf4;color:#2b1a0e;box-sizing:border-box}
+  .bk-field input:focus,.bk-field select:focus,.bk-field textarea:focus{outline:none;border-color:#b8895a;background:#fff}
+  .bk-field textarea{resize:vertical;min-height:60px}
+  .bk-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .bk-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+  .bk-slot{padding:8px 4px;border:1px solid #e2d4bf;border-radius:8px;background:#fdfaf4;font-size:.78rem;cursor:pointer;color:#2b1a0e;font-family:inherit;transition:all .15s}
+  .bk-slot:hover:not(:disabled){border-color:#b8895a;background:#fff}
+  .bk-slot.selected{background:#6b3f2a;color:#fff;border-color:#6b3f2a}
+  .bk-slot:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+  .bk-submit{width:100%;padding:13px;background:linear-gradient(135deg,#b8895a,#6b3f2a);color:#fff;border:none;border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;letter-spacing:.02em;margin-top:6px}
+  .bk-submit:hover{filter:brightness(1.08)}
+  .bk-submit:disabled{opacity:.6;cursor:wait}
+  .bk-msg{font-size:.82rem;padding:10px 12px;border-radius:8px;margin-bottom:12px}
+  .bk-msg.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+  .bk-success{text-align:center;padding:18px 8px}
+  .bk-success-icon{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#e8d5bd,#b8895a);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px}
+  .bk-success h4{margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.5rem;color:#2b1a0e}
+  .bk-success p{margin:0;font-size:.88rem;color:#6b3f2a;line-height:1.5}
+  .bk-success-detail{background:#f9f4eb;border-radius:10px;padding:12px;margin:14px 0;font-size:.85rem;color:#2b1a0e}
+</style>
+
+<div class="book-modal-backdrop" id="bookModal" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle">
+  <div class="book-modal">
+    <div class="book-modal-head">
+      <div>
+        <h3 id="bookModalTitle">Book your session</h3>
+        <p>Izzy will confirm by text within a few hours.</p>
+      </div>
+      <button type="button" class="book-modal-close" aria-label="Close" id="bkClose">×</button>
+    </div>
+    <div class="book-modal-body" id="bkBody">
+      <div id="bkError" class="bk-msg error" style="display:none"></div>
+      <form id="bkForm">
+        <div class="bk-field">
+          <label for="bkName">Name</label>
+          <input id="bkName" name="name" type="text" required autocomplete="name" maxlength="80"/>
+        </div>
+        <div class="bk-row">
+          <div class="bk-field">
+            <label for="bkPhone">Phone</label>
+            <input id="bkPhone" name="phone" type="tel" required autocomplete="tel" placeholder="(435) 555-0100"/>
+          </div>
+          <div class="bk-field">
+            <label for="bkEmail">Email (optional)</label>
+            <input id="bkEmail" name="email" type="email" autocomplete="email"/>
+          </div>
+        </div>
+        <div class="bk-field">
+          <label for="bkService">Service</label>
+          <select id="bkService" name="serviceId" required></select>
+        </div>
+        <div class="bk-field">
+          <label for="bkDate">Date</label>
+          <input id="bkDate" name="date" type="date" required/>
+        </div>
+        <div class="bk-field">
+          <label>Time</label>
+          <div class="bk-slots" id="bkSlots"></div>
+          <input type="hidden" id="bkTime" name="time" required/>
+        </div>
+        <div class="bk-field">
+          <label for="bkNotes">Notes (optional)</label>
+          <textarea id="bkNotes" name="notes" maxlength="500" placeholder="Skin tone, event date, etc."></textarea>
+        </div>
+        <button type="submit" class="bk-submit" id="bkSubmit">Confirm Appointment</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById('bookModal');
+  const closeBtn = document.getElementById('bkClose');
+  const form = document.getElementById('bkForm');
+  const body = document.getElementById('bkBody');
+  const errBox = document.getElementById('bkError');
+  const submit = document.getElementById('bkSubmit');
+  const serviceSel = document.getElementById('bkService');
+  const dateEl = document.getElementById('bkDate');
+  const slotsEl = document.getElementById('bkSlots');
+  const timeEl = document.getElementById('bkTime');
+
+  const SLOTS = [];
+  for (let h = 9; h <= 19; h++) {
+    SLOTS.push(String(h).padStart(2,'0') + ':00');
+    if (h !== 19) SLOTS.push(String(h).padStart(2,'0') + ':30');
+  }
+
+  function fmtTime(t){
+    const [h,m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return (h === 0 ? 12 : h > 12 ? h - 12 : h) + ':' + String(m).padStart(2,'0') + ampm;
+  }
+
+  async function loadServices(){
+    try {
+      const r = await fetch('/api/public/services');
+      const list = await r.json();
+      serviceSel.innerHTML = list.map(s =>
+        '<option value="' + s.id + '">' + s.name + ' — $' + s.price + ' · ' + s.durationMinutes + ' min</option>'
+      ).join('');
+    } catch(e){ console.error(e); }
+  }
+
+  async function refreshSlots(){
+    timeEl.value = '';
+    slotsEl.innerHTML = '<div style="grid-column:span 4;font-size:.78rem;color:#8a7a6a">Loading…</div>';
+    const date = dateEl.value;
+    if (!date) { slotsEl.innerHTML = ''; return; }
+    let taken = [];
+    try {
+      const r = await fetch('/api/public/availability?date=' + encodeURIComponent(date));
+      taken = (await r.json()).map(x => x.time);
+    } catch(e){}
+    const todayStr = new Date().toISOString().slice(0,10);
+    const nowHHMM = new Date().toTimeString().slice(0,5);
+    slotsEl.innerHTML = SLOTS.map(t => {
+      const isBooked = taken.includes(t);
+      const isPast = date === todayStr && t <= nowHHMM;
+      const disabled = isBooked || isPast;
+      return '<button type="button" class="bk-slot" data-t="' + t + '"' + (disabled ? ' disabled' : '') + '>' + fmtTime(t) + '</button>';
+    }).join('');
+    slotsEl.querySelectorAll('.bk-slot').forEach(b => {
+      b.addEventListener('click', () => {
+        slotsEl.querySelectorAll('.bk-slot').forEach(x => x.classList.remove('selected'));
+        b.classList.add('selected');
+        timeEl.value = b.dataset.t;
+      });
+    });
+  }
+
+  function openModal(){
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    errBox.style.display = 'none';
+    const now = new Date();
+    const defaultDay = new Date(now); defaultDay.setDate(defaultDay.getDate() + 1);
+    dateEl.min = now.toISOString().slice(0,10);
+    if (!dateEl.value) dateEl.value = defaultDay.toISOString().slice(0,10);
+    if (!serviceSel.options.length) loadServices();
+    refreshSlots();
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-open-book]').forEach(el => {
+    el.addEventListener('click', e => { e.preventDefault(); openModal(); });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
+  dateEl.addEventListener('change', refreshSlots);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    errBox.style.display = 'none';
+    if (!timeEl.value) { errBox.textContent = 'Please pick a time slot.'; errBox.style.display = 'block'; return; }
+    submit.disabled = true; submit.textContent = 'Booking…';
+    const payload = {
+      name: document.getElementById('bkName').value.trim(),
+      phone: document.getElementById('bkPhone').value.trim(),
+      email: document.getElementById('bkEmail').value.trim() || undefined,
+      serviceId: Number(serviceSel.value),
+      date: dateEl.value,
+      time: timeEl.value,
+      notes: document.getElementById('bkNotes').value.trim() || undefined,
+    };
+    try {
+      const r = await fetch('/api/public/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || 'Booking failed');
+      const dt = new Date(json.date + 'T' + json.time);
+      const prettyDate = dt.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+      body.innerHTML =
+        '<div class="bk-success">' +
+        '<div class="bk-success-icon">✓</div>' +
+        '<h4>You\u2019re booked!</h4>' +
+        '<p>Izzy will text you to confirm and prep.</p>' +
+        '<div class="bk-success-detail">' +
+          '<strong>' + json.service + '</strong><br>' +
+          prettyDate + ' at ' + fmtTime(json.time) +
+        '</div>' +
+        '<button type="button" class="bk-submit" onclick="document.getElementById(\'bookModal\').classList.remove(\'open\');document.body.style.overflow=\'\';location.reload()">Done</button>' +
+        '</div>';
+    } catch (err) {
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+      submit.disabled = false; submit.textContent = 'Confirm Appointment';
+    }
+  });
+})();
+</script>
+
 </body>
 </html>

@@ -108,6 +108,78 @@ export async function registerRoutes(httpServer: Server, app: Express) {
     res.json(p);
   });
 
+  // ── Public booking (no auth) ────────────────────────────────────────────
+  app.get("/api/public/services", async (_req, res) => {
+    const all = await storage.getServices();
+    res.json(all.filter((s) => s.active).map((s) => ({
+      id: s.id, name: s.name, type: s.type,
+      durationMinutes: s.durationMinutes, price: s.price,
+    })));
+  });
+
+  app.get("/api/public/availability", async (req, res) => {
+    const date = (req.query.date as string) || today();
+    const list = await storage.getAppointments(date);
+    res.json(list
+      .filter((a) => a.status !== "cancelled" && a.status !== "no_show")
+      .map((a) => ({ time: a.time, serviceId: a.serviceId }))
+    );
+  });
+
+  app.post("/api/public/book", async (req, res) => {
+    try {
+      const { name, phone, email, serviceId, date, time, notes } = req.body ?? {};
+      if (!name || !phone || !serviceId || !date || !time) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      const cleanPhone = String(phone).replace(/\D/g, "");
+      if (cleanPhone.length < 10) return res.status(400).json({ error: "Invalid phone" });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: "Invalid date" });
+      if (!/^\d{2}:\d{2}$/.test(time)) return res.status(400).json({ error: "Invalid time" });
+
+      const svc = (await storage.getServices()).find((s) => s.id === Number(serviceId) && s.active);
+      if (!svc) return res.status(400).json({ error: "Service not available" });
+
+      // Prevent double-booking same time slot
+      const existing = await storage.getAppointments(date);
+      if (existing.some((a) => a.time === time && a.status !== "cancelled" && a.status !== "no_show")) {
+        return res.status(409).json({ error: "That time is already booked" });
+      }
+
+      // Match existing client by phone, else create
+      const all = await storage.getClients();
+      const match = all.find((c) => (c.phone || "").replace(/\D/g, "") === cleanPhone);
+      const now = new Date().toISOString();
+      const client = match ?? (await storage.createClient({
+        name: String(name).trim().slice(0, 80),
+        phone: cleanPhone,
+        email: email ? String(email).trim().slice(0, 120) : null,
+        status: "active",
+        waiverSigned: false,
+        intakeComplete: false,
+        totalVisits: 0,
+        createdAt: now,
+      }));
+
+      const appt = await storage.createAppointment({
+        clientId: client.id,
+        serviceId: svc.id,
+        date, time,
+        status: "scheduled",
+        notes: notes ? String(notes).slice(0, 500) : null,
+        revenue: null as any,
+        prepReminderSent: false,
+        rinseReminderSent: false,
+        reviewRequestSent: false,
+        createdAt: now,
+      } as any);
+
+      res.json({ ok: true, appointmentId: appt.id, service: svc.name, date, time });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // ── SMS via Twilio ──────────────────────────────────────────────────────
   app.post("/api/sms/send", async (req, res) => {
     try {
